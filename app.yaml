@@ -1,0 +1,19 @@
+# Google App Engine (Flexible, custom runtime) deployment for EcoSync.
+#
+# This reuses the project Dockerfile to build a single container that serves
+# both the FastAPI API and the compiled React dashboard.
+#
+#   gcloud app deploy app.yaml
+#
+# Prefer Cloud Run? Skip this file and run instead:
+#   gcloud run deploy ecosync --source . --region us-central1 --allow-unauthenticated
+runtime: custom
+env: flex
+
+manual_scaling:
+  instances: 1
+
+resources:
+  cpu: 1
+  memory_gb: 0.5
+  disk_size_gb: 10

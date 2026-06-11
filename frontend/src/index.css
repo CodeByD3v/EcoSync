@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: #0b0f14;
+  background-image: radial-gradient(
+      1200px 600px at 80% -10%,
+      rgba(34, 197, 94, 0.12),
+      transparent 60%
+    ),
+    radial-gradient(900px 500px at -10% 10%, rgba(52, 211, 153, 0.08), transparent 55%);
+  color: #e2e8f0;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Thin, themed scrollbar to match the premium aesthetic. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e2a35;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2a3a48;
+}

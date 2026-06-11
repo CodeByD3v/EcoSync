@@ -1,0 +1,15 @@
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+
+# Bundled frontend build copied into the backend image
+backend/static/
+
+# Node / Vite
+frontend/node_modules/
+frontend/dist/
+
+# Env
+.env
+*.local
