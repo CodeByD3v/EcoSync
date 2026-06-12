@@ -3,9 +3,9 @@ import { Car, CreditCard, Home, Leaf, Lock, MapPin, Salad, Zap } from 'lucide-re
 import { getGridFactor } from '../lib/gridFactors.js'
 import { submitOnboarding } from '../api.js'
 
-const COMMUTE_MUL = { drive: 1.0, transit: 0.15, two_wheeler: 0.35, walk: 0.0 }
-const HOUSING_MUL = { house: 1.3, apartment: 1.0, shared: 0.7 }
-const DIET_KG = { meat_heavy: 2500, flexitarian: 1500, vegetarian: 700, vegan: 300 }
+const COMMUTE_MAPPING = { drive: 200.0, two_wheeler: 120.0, transit: 50.0, walk: 0.0 }
+const HOUSING_MAPPING = { house: 350.0, apartment: 200.0, shared: 100.0 }
+const DIET_KG = { meat_heavy: 2500, flexitarian: 1500, mixed: 1500, vegetarian: 700, vegan: 300 }
 
 // Neutral defaults so the live dial reads a sensible baseline before the user
 // has made every lifestyle selection. These only feed the dial preview — the
@@ -49,14 +49,17 @@ const PERMISSION_ROWS = [
 ]
 
 function estimateFootprint(gridFactor, { diet, commute, housing }) {
-  const c = COMMUTE_MUL[commute ?? CALC_DEFAULTS.commute]
-  const h = HOUSING_MUL[housing ?? CALC_DEFAULTS.housing]
-  const d = DIET_KG[diet ?? CALC_DEFAULTS.diet]
+  const kmPerWeek = COMMUTE_MAPPING[commute ?? CALC_DEFAULTS.commute]
+  const kwhPerMonth = HOUSING_MAPPING[housing ?? CALC_DEFAULTS.housing]
+  const dietVal = diet ?? CALC_DEFAULTS.diet
+  const dietMapped = dietVal === 'flexitarian' ? 'mixed' : dietVal
+  const d = DIET_KG[dietMapped] ?? 1500
 
-  const transport = 15000 * gridFactor.transportKm * c
-  const energy = 200 * h * 12 * gridFactor.gridKwh
+  const transport = kmPerWeek * 52 * gridFactor.transportKm
+  const energy = kwhPerMonth * 12 * gridFactor.gridKwh
+  const flights = 2 * 255
   const shopping = 5 * 12 * 6.5
-  return Math.round(transport + energy + d + shopping)
+  return Math.round(transport + energy + flights + shopping + d)
 }
 
 // Animated 180° gauge. The arc colour reflects how the estimate compares to the

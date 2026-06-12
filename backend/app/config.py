@@ -40,6 +40,32 @@ class Settings:
         )
     )
 
+    # Database Path configuration
+    db_path: Path = field(
+        default_factory=lambda: Path(
+            os.getenv("ECOSYNC_DB_PATH", BACKEND_DIR / "ecosync.db")
+        )
+    )
+
+    # LLM Settings
+    gemini_api_key: str | None = field(
+        default_factory=lambda: os.getenv("GEMINI_API_KEY")
+    )
+    llm_model: str = field(
+        default_factory=lambda: os.getenv("LLM_MODEL", "gemini-1.5-flash")
+    )
+    llm_temperature: float = field(
+        default_factory=lambda: float(os.getenv("LLM_TEMPERATURE", "0.2"))
+    )
+
+    # Server settings (used by main.py)
+    port: int = field(
+        default_factory=lambda: int(os.getenv("PORT", "8000"))
+    )
+    reload: bool = field(
+        default_factory=lambda: os.getenv("ECOSYNC_RELOAD", "True").lower() in ("true", "1", "yes")
+    )
+
     @property
     def serve_frontend(self) -> bool:
         return self.static_dir.is_dir()
@@ -47,3 +73,4 @@ class Settings:
 
 def get_settings() -> Settings:
     return Settings()
+

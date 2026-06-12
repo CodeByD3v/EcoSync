@@ -26,20 +26,20 @@ import {
 } from './fallbackData.js'
 import useUserProfile from './hooks/useUserProfile.js'
 import Onboarding from './components/Onboarding.jsx'
+import { getGridFactor } from './lib/gridFactors.js'
 
 // Local carbon factors fallback if backend is offline
 const LOCAL_EF = {
-  car_per_km: 0.21,
   flight_per_trip: 255,
-  electricity_per_kwh: 0.82,
   diet: { meat_heavy: 2500, mixed: 1500, vegetarian: 700, vegan: 300 },
   shopping_per_item: 6.5,
 }
 
-function calculateFootprintLocal(inputs) {
-  const car = Math.round(inputs.km_driven_per_week * 52 * LOCAL_EF.car_per_km)
+function calculateFootprintLocal(inputs, city) {
+  const gf = getGridFactor(city)
+  const car = Math.round(inputs.km_driven_per_week * 52 * gf.transportKm)
   const fly = Math.round(inputs.flights_per_year * LOCAL_EF.flight_per_trip)
-  const elec = Math.round(inputs.kwh_per_month * 12 * LOCAL_EF.electricity_per_kwh)
+  const elec = Math.round(inputs.kwh_per_month * 12 * gf.gridKwh)
   const food = LOCAL_EF.diet[inputs.diet] ?? 1500
   const shop = Math.round(inputs.new_items_per_month * 12 * LOCAL_EF.shopping_per_item)
   const total = car + fly + elec + food + shop
@@ -209,7 +209,7 @@ export default function App() {
 
     try {
       if (offline) {
-        const calculated = calculateFootprintLocal(nextInputs)
+        const calculated = calculateFootprintLocal(nextInputs, profile?.city)
         setFootprint(calculated)
       } else {
         const calculated = await calculateFootprint(nextInputs)
@@ -221,6 +221,8 @@ export default function App() {
     } catch (err) {
       console.error(err)
     }
+  }
+
   const handleOnboardingComplete = async (profileData) => {
     saveProfile(profileData)
     setLoading(true)
@@ -254,7 +256,7 @@ export default function App() {
         diet: profileData.diet === 'flexitarian' ? 'mixed' : profileData.diet,
         new_items_per_month: 5,
       }
-      const calculated = calculateFootprintLocal(calcInit)
+      const calculated = calculateFootprintLocal(calcInit, profileData.city)
       setFootprint(calculated)
       setInsights(FALLBACK_INSIGHTS)
       setActions(FALLBACK_ACTIONS)
@@ -326,8 +328,8 @@ export default function App() {
                   <Icon size={14} />
                   {t.label}
                 </button>
-              )}
-            )}
+              )
+            })}
           </div>
 
           {/* User Profile Badge & Reset */}

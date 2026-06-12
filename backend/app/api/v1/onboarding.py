@@ -10,47 +10,27 @@ from fastapi import APIRouter, HTTPException
 
 from app.db import get_db_connection
 from app.schemas import OnboardingRequest, OnboardingResponse
-from app.schemas.onboarding import GridFactors
+from app.services.footprint_service import get_footprint_service
 
 router = APIRouter(prefix="/onboard", tags=["onboarding"])
 
-_REGIONS = [
-    (("mumbai", "pune", "maharashtra"), GridFactors(grid_kwh=0.86, transport_km=0.19, avg_annual_kg=1900)),
-    (("delhi", "noida", "gurgaon"), GridFactors(grid_kwh=0.90, transport_km=0.22, avg_annual_kg=2100)),
-    (("bengaluru", "hyderabad"), GridFactors(grid_kwh=0.78, transport_km=0.18, avg_annual_kg=1850)),
-    (("chennai", "kochi", "kerala"), GridFactors(grid_kwh=0.72, transport_km=0.17, avg_annual_kg=1750)),
-    (("kolkata",), GridFactors(grid_kwh=0.88, transport_km=0.20, avg_annual_kg=2000)),
-]
-_INDIA_FALLBACK = GridFactors(grid_kwh=0.82, transport_km=0.21, avg_annual_kg=2000)
-
-COMMUTE_MUL = {"drive": 1.0, "transit": 0.15, "two_wheeler": 0.35, "walk": 0.0}
-HOUSING_MUL = {"house": 1.3, "apartment": 1.0, "shared": 0.7}
-DIET_KG = {"meat_heavy": 2500, "flexitarian": 1500, "vegetarian": 700, "vegan": 300}
-
-
-def _lookup_grid_factor(city: str) -> GridFactors:
-    needle = city.strip().lower()
-    for keys, factors in _REGIONS:
-        if any(key in needle for key in keys):
-            return factors
-    return _INDIA_FALLBACK
+ALLOWED_COMMUTE = {"drive", "transit", "two_wheeler", "walk"}
+ALLOWED_HOUSING = {"house", "apartment", "shared"}
+ALLOWED_DIET = {"meat_heavy", "flexitarian", "vegetarian", "vegan"}
 
 
 @router.post("", response_model=OnboardingResponse)
 def onboard(payload: OnboardingRequest) -> OnboardingResponse:
     """Estimate user footprint and save profile preferences to SQLite."""
 
-    if payload.commute not in COMMUTE_MUL:
+    if payload.commute not in ALLOWED_COMMUTE:
         raise HTTPException(status_code=422, detail=f"Unknown commute: {payload.commute}")
-    if payload.housing not in HOUSING_MUL:
+    if payload.housing not in ALLOWED_HOUSING:
         raise HTTPException(status_code=422, detail=f"Unknown housing: {payload.housing}")
-    if payload.diet not in DIET_KG:
+    if payload.diet not in ALLOWED_DIET:
         raise HTTPException(status_code=422, detail=f"Unknown diet: {payload.diet}")
 
-    # 1. Look up regional factor
-    gf = _lookup_grid_factor(payload.city)
-
-    # 2. Map high-level questions to numeric sliders
+    # 1. Map high-level questions to numeric sliders
     km_per_week = 200.0 if payload.commute == "drive" else (
         120.0 if payload.commute == "two_wheeler" else (
             50.0 if payload.commute == "transit" else 0.0
@@ -63,14 +43,20 @@ def onboard(payload: OnboardingRequest) -> OnboardingResponse:
     flights = 2
     new_items = 5
 
-    # 3. Calculate baseline
-    transport = round(15000 * gf.transport_km * COMMUTE_MUL[payload.commute])
-    energy = round(200 * HOUSING_MUL[payload.housing] * 12 * gf.grid_kwh)
-    diet = DIET_KG[payload.diet]
-    shopping = round(5 * 12 * 6.5)
-    total = transport + energy + diet + shopping
+    # 2. Calculate baseline using centralized service logic
+    fp_service = get_footprint_service()
+    calc_res = fp_service.calculate_co2_breakdown(
+        city=payload.city,
+        km_driven_per_week=km_per_week,
+        flights_per_year=flights,
+        kwh_per_month=kwh_per_month,
+        diet=diet_mapped,
+        new_items_per_month=new_items,
+    )
+    total = calc_res["total_annual"]
+    gf = calc_res["grid_factors"]
 
-    # 4. Save to Database
+    # 3. Save to Database
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -106,3 +92,4 @@ def onboard(payload: OnboardingRequest) -> OnboardingResponse:
         estimated_annual_kg=total,
         message=message,
     )
+

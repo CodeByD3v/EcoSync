@@ -9,11 +9,11 @@ falls back to a dynamic rule-based engine.
 from __future__ import annotations
 
 import json
-import os
 import urllib.request
 from functools import lru_cache
 from typing import List
 
+from app.config import get_settings
 from app.db import get_db_connection
 from app.schemas import Insight
 from app.services.footprint_service import get_footprint_service, EF
@@ -28,8 +28,9 @@ class InsightsService:
         fp_service = get_footprint_service()
         p = fp_service.get_profile()
 
-        # 2. Check for Gemini API key
-        api_key = os.getenv("GEMINI_API_KEY")
+        # 2. Check for Gemini API key via application settings
+        settings = get_settings()
+        api_key = settings.gemini_api_key
         if api_key:
             try:
                 insights = self._get_gemini_insights(api_key, p)
@@ -54,7 +55,11 @@ class InsightsService:
 
     def _get_gemini_insights(self, api_key: str, p: dict) -> List[dict] | None:
         """Call the Gemini API using standard library to generate insights in JSON format."""
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        settings = get_settings()
+        model = settings.llm_model
+        temp = settings.llm_temperature
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
         # Build prompt
         prompt = (
@@ -82,7 +87,7 @@ class InsightsService:
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {
                 "responseMimeType": "application/json",
-                "temperature": 0.2,
+                "temperature": temp,
             },
         }
 

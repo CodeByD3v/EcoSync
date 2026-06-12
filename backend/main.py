@@ -8,6 +8,10 @@ runs.
 from __future__ import annotations
 
 import os
+from dotenv import load_dotenv
+
+# Load environment variables before initializing the FastAPI application
+load_dotenv()
 
 import uvicorn
 
@@ -17,9 +21,11 @@ app = create_app()
 
 
 if __name__ == "__main__":
+    from app.config import get_settings
+    settings = get_settings()
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=int(os.getenv("PORT", "8000")),
-        reload=bool(os.getenv("ECOSYNC_RELOAD")),
+        port=settings.port,
+        reload=settings.reload,
     )

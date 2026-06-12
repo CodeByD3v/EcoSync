@@ -6,15 +6,16 @@ challenges, and history if they are not already present.
 
 from __future__ import annotations
 
-import os
 import sqlite3
 from pathlib import Path
+from app.config import get_settings
 
-# Database path defaults to ecosync.db in the backend folder
-DB_PATH = Path(os.getenv("ECOSYNC_DB_PATH", Path(__file__).resolve().parent.parent / "ecosync.db"))
+# Database path is resolved dynamically via application Settings
+DB_PATH = get_settings().db_path
 
 
 def get_db_connection() -> sqlite3.Connection:
+
     """Return a sqlite3 connection with dict-like row formatting."""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
