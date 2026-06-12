@@ -5,16 +5,16 @@ import { submitOnboarding } from '../api.js'
 
 const COMMUTE_MAPPING = { drive: 200.0, two_wheeler: 120.0, transit: 50.0, walk: 0.0 }
 const HOUSING_MAPPING = { house: 350.0, apartment: 200.0, shared: 100.0 }
-const DIET_KG = { meat_heavy: 2500, flexitarian: 1500, mixed: 1500, vegetarian: 700, vegan: 300 }
+const DIET_KG = { meat_heavy: 2500, mixed: 1500, vegetarian: 700, vegan: 300 }
 
 // Neutral defaults so the live dial reads a sensible baseline before the user
 // has made every lifestyle selection. These only feed the dial preview — the
 // "Next" gating still requires explicit choices.
-const CALC_DEFAULTS = { diet: 'flexitarian', commute: 'drive', housing: 'apartment' }
+const CALC_DEFAULTS = { diet: 'mixed', commute: 'drive', housing: 'apartment' }
 
 const DIET_OPTIONS = [
   { value: 'meat_heavy', label: 'Meat-heavy' },
-  { value: 'flexitarian', label: 'Flexitarian' },
+  { value: 'mixed', label: 'Flexitarian' },
   { value: 'vegetarian', label: 'Vegetarian' },
   { value: 'vegan', label: 'Vegan' },
 ]
@@ -52,7 +52,7 @@ function estimateFootprint(gridFactor, { diet, commute, housing }) {
   const kmPerWeek = COMMUTE_MAPPING[commute ?? CALC_DEFAULTS.commute]
   const kwhPerMonth = HOUSING_MAPPING[housing ?? CALC_DEFAULTS.housing]
   const dietVal = diet ?? CALC_DEFAULTS.diet
-  const dietMapped = dietVal === 'flexitarian' ? 'mixed' : dietVal
+  const dietMapped = dietVal
   const d = DIET_KG[dietMapped] ?? 1500
 
   const transport = kmPerWeek * 52 * gridFactor.transportKm

@@ -309,7 +309,7 @@ export default function App() {
         km_driven_per_week: profileData.commute === 'drive' ? 200 : (profileData.commute === 'two_wheeler' ? 100 : 50),
         flights_per_year: 2,
         kwh_per_month: profileData.housing === 'house' ? 350 : (profileData.housing === 'apartment' ? 200 : 100),
-        diet: profileData.diet === 'flexitarian' ? 'mixed' : profileData.diet,
+        diet: profileData.diet,
         new_items_per_month: 5,
       }
       const calculated = calculateFootprintLocal(calcInit, profileData.city, profileData.name)
