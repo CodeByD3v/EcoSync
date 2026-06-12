@@ -21,6 +21,9 @@ export default {
       boxShadow: {
         glow: '0 0 24px rgba(52, 211, 153, 0.25)',
       },
+      animation: {
+        'spin-slow': 'spin 12s linear infinite',
+      },
     },
   },
   plugins: [],

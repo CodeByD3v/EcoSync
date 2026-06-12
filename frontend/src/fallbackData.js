@@ -3,16 +3,16 @@
 export const FALLBACK_FOOTPRINT = {
   user_name: 'Arjun',
   date: new Date().toISOString().slice(0, 10),
-  total_kg: 3200,
-  yesterday_kg: 3320,
+  total_kg: 4950,
+  yesterday_kg: 5070,
   delta_kg: -120.0,
   unit: 'kg CO2e',
   breakdown: [
-    { name: 'Home Energy', percentage: 42.0, kg: 1344, color: '#185FA5' },
-    { name: 'Transport', percentage: 38.0, kg: 1216, color: '#D85A30' },
-    { name: 'Flights', percentage: 10.0, kg: 320, color: '#993C1D' },
-    { name: 'Diet', percentage: 6.0, kg: 192, color: '#3B6D11' },
-    { name: 'Shopping', percentage: 4.0, kg: 128, color: '#534AB7' },
+    { name: 'Home Energy', percentage: 40.0, kg: 1980, color: '#185FA5' },
+    { name: 'Transport', percentage: 22.0, kg: 1090, color: '#D85A30' },
+    { name: 'Flights', percentage: 0.0, kg: 0, color: '#993C1D' },
+    { name: 'Diet', percentage: 30.0, kg: 1490, color: '#3B6D11' },
+    { name: 'Shopping', percentage: 8.0, kg: 390, color: '#534AB7' },
   ],
   trend: [
     { label: 'Jan', value: 420 },

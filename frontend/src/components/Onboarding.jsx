@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Car, CreditCard, Home, Leaf, Lock, MapPin, Salad, Zap } from 'lucide-react'
 import { getGridFactor } from '../lib/gridFactors.js'
-import { useUserProfile } from '../hooks/useUserProfile.js'
 import { submitOnboarding } from '../api.js'
 
 const COMMUTE_MUL = { drive: 1.0, transit: 0.15, two_wheeler: 0.35, walk: 0.0 }
@@ -167,7 +166,6 @@ const PRIMARY_BTN =
   'rounded-xl border border-eco-neon bg-eco-neon/10 px-5 py-2.5 text-sm font-semibold text-eco-neon transition-colors hover:bg-eco-neon/20 disabled:cursor-not-allowed disabled:opacity-40'
 
 export default function Onboarding({ onComplete }) {
-  const { saveProfile } = useUserProfile()
   const [step, setStep] = useState(0)
 
   const [name, setName] = useState('')
@@ -181,7 +179,10 @@ export default function Onboarding({ onComplete }) {
     utility: false,
   })
 
-  const gridFactor = useMemo(() => getGridFactor(city), [city])
+  const gridFactor = useMemo(() => {
+    if (!city.trim()) return { gridKwh: 0.82, transportKm: 0.21, avgAnnualKg: 2000 }
+    return getGridFactor(city)
+  }, [city])
   const liveFootprint = useMemo(
     () => estimateFootprint(gridFactor, { diet, commute, housing }),
     [gridFactor, diet, commute, housing],
@@ -215,7 +216,6 @@ export default function Onboarding({ onComplete }) {
       // Ignore — onboarding state is persisted locally regardless.
     }
 
-    saveProfile(profile)
     onComplete(profile)
   }
 
@@ -271,7 +271,7 @@ export default function Onboarding({ onComplete }) {
                   onChange={(e) => setCity(e.target.value)}
                   placeholder="Mumbai"
                 />
-                {city.trim() !== '' && (
+                {city.trim().length >= 3 && (
                   <p className="mt-2 text-xs text-eco-neon">
                     Grid intensity for {city.trim()}: {gridFactor.gridKwh} kg CO₂/kWh · local avg{' '}
                     {(gridFactor.avgAnnualKg / 1000).toFixed(1)}t/yr

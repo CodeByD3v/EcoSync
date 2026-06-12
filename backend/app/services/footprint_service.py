@@ -20,6 +20,7 @@ EF = {
     "diet": {
         "meat_heavy": 2500.0,     # kg CO2e / year
         "mixed": 1500.0,
+        "flexitarian": 1500.0,
         "vegetarian": 700.0,
         "vegan": 300.0,
     },
@@ -47,7 +48,9 @@ class FootprintService:
             cursor.execute("SELECT * FROM profile LIMIT 1")
             row = cursor.fetchone()
             if row:
-                return dict(row)
+                d = dict(row)
+                d.pop("id", None)
+                return d
             return {
                 "name": "Arjun",
                 "city": "Bengaluru",

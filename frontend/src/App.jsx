@@ -100,7 +100,7 @@ function StatusBadge({ total }) {
 }
 
 export default function App() {
-  const { profile, saveProfile } = useUserProfile()
+  const { profile, saveProfile, clearProfile } = useUserProfile()
   const [footprint, setFootprint] = useState(null)
   const [insights, setInsights] = useState([])
   const [actions, setActions] = useState([])
@@ -221,17 +221,60 @@ export default function App() {
     } catch (err) {
       console.error(err)
     }
+  const handleOnboardingComplete = async (profileData) => {
+    saveProfile(profileData)
+    setLoading(true)
+    try {
+      const [fp, ins, acts, chs, prof] = await Promise.all([
+        getDailyFootprint(),
+        getInsights(),
+        getActions(),
+        getChallenges(),
+        getUserProfile(),
+      ])
+      setFootprint(fp)
+      setInsights(ins)
+      setActions(acts)
+      setChallenges(chs)
+      setCalcInputs({
+        km_driven_per_week: prof.km_driven_per_week ?? 100,
+        flights_per_year: prof.flights_per_year ?? 2,
+        kwh_per_month: prof.kwh_per_month ?? 200,
+        diet: prof.diet ?? 'mixed',
+        new_items_per_month: prof.new_items_per_month ?? 5,
+      })
+      setTotalPoints(acts.filter((a) => a.completed).reduce((s, a) => s + a.points, 0))
+      setOffline(false)
+    } catch {
+      setOffline(true)
+      const calcInit = {
+        km_driven_per_week: profileData.commute === 'drive' ? 200 : (profileData.commute === 'two_wheeler' ? 100 : 50),
+        flights_per_year: 2,
+        kwh_per_month: profileData.housing === 'house' ? 350 : (profileData.housing === 'apartment' ? 200 : 100),
+        diet: profileData.diet === 'flexitarian' ? 'mixed' : profileData.diet,
+        new_items_per_month: 5,
+      }
+      const calculated = calculateFootprintLocal(calcInit)
+      setFootprint(calculated)
+      setInsights(FALLBACK_INSIGHTS)
+      setActions(FALLBACK_ACTIONS)
+      setChallenges(FALLBACK_CHALLENGES)
+      setCalcInputs(calcInit)
+      setTotalPoints(FALLBACK_ACTIONS.filter((a) => a.completed).reduce((s, a) => s + a.points, 0))
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Gate dashboard behind one-time onboarding
-  if (!profile) return <Onboarding onComplete={saveProfile} />
+  if (!profile) return <Onboarding onComplete={handleOnboardingComplete} />
 
   if (loading || !footprint) {
     return (
       <div className="grid min-h-screen place-items-center text-slate-400">
         <div className="flex items-center gap-3">
-          <Leaf className="animate-pulse text-eco-neon" />
-          Loading your carbon footprint profile…
+          <Leaf className="animate-pulse text-eco-neon animate-spin-slow" />
+          {profile?.name ? `Loading your profile, ${profile.name}…` : 'Loading your carbon footprint profile…'}
         </div>
       </div>
     )
@@ -287,14 +330,29 @@ export default function App() {
             )}
           </div>
 
-          {/* User Profile Badge */}
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-eco-neon/20 border border-eco-neon/40 flex items-center justify-center text-xs font-bold text-eco-neon">
-              {profile.name ? profile.name.charAt(0).toUpperCase() : 'U'}
-            </div>
-            <div className="text-left">
-              <p className="text-xs font-bold text-white">{profile.name || 'User'}</p>
-              <p className="text-[10px] text-slate-400">{profile.city || 'Location'}</p>
+          {/* User Profile Badge & Reset */}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => {
+                clearProfile()
+                setFootprint(null)
+                setInsights([])
+                setActions([])
+                setChallenges([])
+              }}
+              className="text-[11px] font-semibold text-slate-400 hover:text-rose-400 border border-panelborder hover:border-rose-500/20 bg-slatebg/40 px-3 py-1.5 rounded-xl transition"
+            >
+              Reset App
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-eco-neon/20 border border-eco-neon/40 flex items-center justify-center text-xs font-bold text-eco-neon">
+                {profile.name ? profile.name.charAt(0).toUpperCase() : 'U'}
+              </div>
+              <div className="text-left">
+                <p className="text-xs font-bold text-white">{profile.name || 'User'}</p>
+                <p className="text-[10px] text-slate-400">{profile.city || 'Location'}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -303,7 +361,7 @@ export default function App() {
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
             {/* Greeting Header */}
-            <Header footprint={footprint} />
+            <Header footprint={footprint} profileName={profile?.name} />
 
             {/* Impact Metric Cards */}
             <div className="grid gap-5 sm:grid-cols-3">

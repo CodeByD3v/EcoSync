@@ -114,7 +114,7 @@ export default function CalculatorPanel({ inputs, onChange, footprint }) {
                 className="w-full rounded-xl border border-panelborder bg-slatebg/60 px-4 py-2.5 text-sm text-white focus:border-eco-neon outline-none"
               >
                 <option value="meat_heavy">Meat-heavy (Daily meat)</option>
-                <option value="mixed">Mixed (Average diet)</option>
+                <option value="mixed">Mixed / Flexitarian</option>
                 <option value="vegetarian">Vegetarian</option>
                 <option value="vegan">Vegan (Plant-based)</option>
               </select>
