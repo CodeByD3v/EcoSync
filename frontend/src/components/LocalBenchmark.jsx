@@ -1,7 +1,7 @@
 import { MapPin, TrendingDown, Info } from 'lucide-react'
 import Card from './Card.jsx'
 
-export default function LocalBenchmark({ userFootprint, zipCode, avgAnnualKg }) {
+export default function LocalBenchmark({ userFootprint, zipCode, avgAnnualKg, profileName }) {
   const userVal = userFootprint // e.g. 3100 kg
   const zipAvg = avgAnnualKg // e.g. 2000 kg
   const greenTarget = Math.round(zipAvg * 0.45) // Top 10% target
@@ -42,7 +42,7 @@ export default function LocalBenchmark({ userFootprint, zipCode, avgAnnualKg }) 
           {/* USER */}
           <div className="space-y-1">
             <div className="flex justify-between text-xs font-semibold text-white">
-              <span>You (Alex)</span>
+              <span>You ({profileName || 'User'})</span>
               <span>{(userVal / 1000).toFixed(2)} tonnes/yr</span>
             </div>
             <div className="h-3 w-full bg-panelborder/50 rounded-full overflow-hidden">

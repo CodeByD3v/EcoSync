@@ -40,7 +40,7 @@ const LOCAL_EF = {
   shopping_per_item: 6.5,
 }
 
-function calculateFootprintLocal(inputs, city) {
+function calculateFootprintLocal(inputs, city, profileName) {
   const gf = getGridFactor(city)
   const car = Math.round(inputs.km_driven_per_week * 52 * gf.transportKm)
   const fly = Math.round(inputs.flights_per_year * LOCAL_EF.flight_per_trip)
@@ -50,7 +50,7 @@ function calculateFootprintLocal(inputs, city) {
   const total = car + fly + elec + food + shop
 
   return {
-    user_name: 'Arjun',
+    user_name: profileName || 'User',
     date: new Date().toISOString().slice(0, 10),
     total_kg: total,
     yesterday_kg: total + 120,
@@ -136,7 +136,7 @@ export default function App() {
         if (type === 'shopping') nextInputs.new_items_per_month = Math.min(100, calcInputs.new_items_per_month + 1)
 
         setCalcInputs(nextInputs)
-        const calculated = calculateFootprintLocal(nextInputs, profile?.city)
+        const calculated = calculateFootprintLocal(nextInputs, profile?.city, profile?.name)
         setFootprint(calculated)
         showToast(`Simulated telemetry event capture: ${label}`)
       } else {
@@ -265,7 +265,7 @@ export default function App() {
 
     try {
       if (offline) {
-        const calculated = calculateFootprintLocal(nextInputs, profile?.city)
+        const calculated = calculateFootprintLocal(nextInputs, profile?.city, profile?.name)
         setFootprint(calculated)
       } else {
         const calculated = await calculateFootprint(nextInputs)
@@ -312,7 +312,7 @@ export default function App() {
         diet: profileData.diet === 'flexitarian' ? 'mixed' : profileData.diet,
         new_items_per_month: 5,
       }
-      const calculated = calculateFootprintLocal(calcInit, profileData.city)
+      const calculated = calculateFootprintLocal(calcInit, profileData.city, profileData.name)
       setFootprint(calculated)
       setInsights(FALLBACK_INSIGHTS)
       setActions(FALLBACK_ACTIONS)
@@ -339,9 +339,16 @@ export default function App() {
   }
 
   // Calculate high-fidelity dashboard metrics
-  const diffPct = Math.round(Math.abs(footprint.total_kg - 2000) / 2000 * 100)
-  const isAboveAvg = footprint.total_kg > 2000
+  const localAvg = profile?.gridFactor?.avgAnnualKg || 2000
+  const diffPct = Math.round(Math.abs(footprint.total_kg - localAvg) / localAvg * 100)
+  const isAboveAvg = footprint.total_kg > localAvg
   const cheeseburgerCount = Math.round(footprint.total_kg / 6.6)
+  const regionLabel = localAvg === 4700 ? 'Global' : (profile?.city ? profile.city : 'India')
+
+  // Dynamic streaks derived from SQLite challenge progress
+  const transitStreak = challenges.find(c => c.id === 'zero-drive-week')?.progress ?? 4
+  const zeroEmissionStreak = challenges.find(c => c.id === 'solar-switch-collective')?.progress ?? 2
+  const dietStreak = challenges.find(c => c.id === 'meatless-monday-streak')?.progress ?? 5
 
   return (
     <div className="min-h-screen bg-slatebg text-slate-200">
@@ -452,14 +459,14 @@ export default function App() {
               </div>
 
               <div className="bg-panel border border-panelborder rounded-2xl p-5 flex flex-col justify-between">
-                <span className="text-xs font-medium uppercase tracking-wider text-slate-500">vs India Average</span>
+                <span className="text-xs font-medium uppercase tracking-wider text-slate-500">vs {regionLabel} Average</span>
                 <span className={`text-3xl font-extrabold mt-2 ${isAboveAvg ? 'text-red-400' : 'text-eco-neon'}`}>
                   {isAboveAvg ? '+' : '-'}
-                  {Math.abs((footprint.total_kg - 2000) / 1000).toFixed(2)}{' '}
+                  {Math.abs((footprint.total_kg - localAvg) / 1000).toFixed(2)}{' '}
                   <span className="text-lg font-medium text-slate-500">tonnes</span>
                 </span>
                 <span className="text-xs text-slate-400 mt-1">
-                  {diffPct}% {isAboveAvg ? 'above' : 'below'} India baseline (2.0t)
+                  {diffPct}% {isAboveAvg ? 'above' : 'below'} {regionLabel} baseline ({(localAvg / 1000).toFixed(1)}t)
                 </span>
               </div>
 
@@ -476,7 +483,7 @@ export default function App() {
             {/* Visualisations Layout */}
             <div className="grid gap-5 md:grid-cols-2">
               <BreakdownChart breakdown={footprint.breakdown} total={`${(footprint.total_kg / 1000).toFixed(1)}t`} unit="CO₂/yr" />
-              <LocalBenchmark userFootprint={footprint.total_kg} zipCode={profile?.zip_code || '560001'} avgAnnualKg={profile?.gridFactor?.avgAnnualKg || 2000} />
+              <LocalBenchmark userFootprint={footprint.total_kg} zipCode={profile?.zip_code || '560001'} avgAnnualKg={profile?.gridFactor?.avgAnnualKg || 2000} profileName={profile?.name} />
 
               <div className="md:col-span-2">
                 <TranslationEngine dailyValue={Math.round((footprint.total_kg / 365.0) * 10) / 10} />
@@ -520,15 +527,15 @@ export default function App() {
                 <div className="space-y-3 py-1">
                   <div className="flex items-center justify-between p-3.5 bg-slatebg/40 border border-panelborder rounded-xl">
                     <span className="text-xs font-semibold text-slate-300">🔥 Public Transit Streak</span>
-                    <span className="text-xs font-extrabold text-eco-lime">4 consecutive days</span>
+                    <span className="text-xs font-extrabold text-eco-lime">{transitStreak} consecutive days</span>
                   </div>
                   <div className="flex items-center justify-between p-3.5 bg-slatebg/40 border border-panelborder rounded-xl">
                     <span className="text-xs font-semibold text-slate-300">🔥 Zero-Emission Commute</span>
-                    <span className="text-xs font-extrabold text-eco-lime">2 consecutive days</span>
+                    <span className="text-xs font-extrabold text-eco-lime">{zeroEmissionStreak} consecutive days</span>
                   </div>
                   <div className="flex items-center justify-between p-3.5 bg-slatebg/40 border border-panelborder rounded-xl">
                     <span className="text-xs font-semibold text-slate-300">🔥 Plant-Based Lunches</span>
-                    <span className="text-xs font-extrabold text-eco-lime">5 consecutive days</span>
+                    <span className="text-xs font-extrabold text-eco-lime">{dietStreak} consecutive days</span>
                   </div>
                 </div>
               </Card>
