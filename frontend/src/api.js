@@ -31,3 +31,14 @@ export const completeAction = (actionId, completed) =>
 
 export const submitOnboarding = (payload) =>
   request('/onboard', { method: 'POST', body: JSON.stringify(payload) })
+
+// New endpoints for calculation, profile settings and community challenges
+export const calculateFootprint = (payload) =>
+  request('/footprint/calculate', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
+export const getUserProfile = () => request('/footprint/profile')
+
+export const getChallenges = () => request('/actions/challenges')

@@ -1,4 +1,4 @@
-"""Actions checklist routes."""
+"""Actions checklist and challenges routes."""
 
 from __future__ import annotations
 
@@ -18,7 +18,6 @@ def get_actions(
     service: ActionsService = Depends(get_actions_service),
 ) -> List[ActionItem]:
     """Return the daily actions checklist and its completion state."""
-
     return service.list_actions()
 
 
@@ -28,8 +27,15 @@ def complete_action(
     service: ActionsService = Depends(get_actions_service),
 ) -> CompleteActionResponse:
     """Toggle the completion state of a checklist item and return new totals."""
-
     try:
         return service.complete(payload.action_id, payload.completed)
     except ActionNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/challenges", response_model=List[dict])
+def get_challenges(
+    service: ActionsService = Depends(get_actions_service),
+) -> List[dict]:
+    """Return the active community challenges and their progress levels."""
+    return service.list_challenges()

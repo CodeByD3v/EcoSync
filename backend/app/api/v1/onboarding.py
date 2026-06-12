@@ -1,15 +1,14 @@
 """Onboarding routes.
 
-Accepts the one-time onboarding payload and returns an estimated annual carbon
-footprint. The grid-factor lookup and calculation intentionally mirror the
-frontend (``frontend/src/lib/gridFactors.js`` and ``Onboarding.jsx``) so the
-estimate shown during onboarding matches the server-side result.
+Accepts the one-time onboarding payload, saves it to the SQLite database,
+and returns an estimated annual carbon footprint.
 """
 
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
+from app.db import get_db_connection
 from app.schemas import OnboardingRequest, OnboardingResponse
 from app.schemas.onboarding import GridFactors
 
@@ -39,7 +38,7 @@ def _lookup_grid_factor(city: str) -> GridFactors:
 
 @router.post("", response_model=OnboardingResponse)
 def onboard(payload: OnboardingRequest) -> OnboardingResponse:
-    """Estimate the user's annual footprint from their onboarding answers."""
+    """Estimate user footprint and save profile preferences to SQLite."""
 
     if payload.commute not in COMMUTE_MUL:
         raise HTTPException(status_code=422, detail=f"Unknown commute: {payload.commute}")
@@ -48,13 +47,50 @@ def onboard(payload: OnboardingRequest) -> OnboardingResponse:
     if payload.diet not in DIET_KG:
         raise HTTPException(status_code=422, detail=f"Unknown diet: {payload.diet}")
 
+    # 1. Look up regional factor
     gf = _lookup_grid_factor(payload.city)
 
+    # 2. Map high-level questions to numeric sliders
+    km_per_week = 200.0 if payload.commute == "drive" else (
+        120.0 if payload.commute == "two_wheeler" else (
+            50.0 if payload.commute == "transit" else 0.0
+        )
+    )
+    kwh_per_month = 350.0 if payload.housing == "house" else (
+        200.0 if payload.housing == "apartment" else 100.0
+    )
+    diet_mapped = "mixed" if payload.diet == "flexitarian" else payload.diet
+    flights = 2
+    new_items = 5
+
+    # 3. Calculate baseline
     transport = round(15000 * gf.transport_km * COMMUTE_MUL[payload.commute])
     energy = round(200 * HOUSING_MUL[payload.housing] * 12 * gf.grid_kwh)
     diet = DIET_KG[payload.diet]
     shopping = round(5 * 12 * 6.5)
     total = transport + energy + diet + shopping
+
+    # 4. Save to Database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Clear existing profile (simplifies local testing/re-onboarding)
+        cursor.execute("DELETE FROM profile")
+        cursor.execute(
+            """
+            INSERT INTO profile (name, city, km_driven_per_week, flights_per_year, kwh_per_month, diet, new_items_per_month)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (payload.name, payload.city, km_per_week, flights, kwh_per_month, diet_mapped, new_items)
+        )
+        # Reset all checklist items to incomplete for a new onboarding
+        cursor.execute("UPDATE actions SET completed = 0")
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        conn.close()
 
     comparison = "above" if total > gf.avg_annual_kg else "below"
     message = (

@@ -1,33 +1,128 @@
-"""In-memory store for the actions checklist.
-
-Swap this class for one backed by a real database to add persistence; the
-service and route layers stay unchanged.
-"""
+"""SQLite-backed store for the actions checklist and community challenges."""
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import List, Optional
 
-from app.data import mock_data
+from app.db import get_db_connection
 from app.schemas import ActionItem
 
 
 class ActionsRepository:
-    def __init__(self) -> None:
-        self._items: Dict[str, ActionItem] = {a.id: a for a in mock_data.default_actions()}
+    """Manages actions checklist and gamified points in SQLite."""
 
     def list(self) -> List[ActionItem]:
-        return list(self._items.values())
+        """Query and return all checklist items."""
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, category, label, points, completed FROM actions")
+            rows = cursor.fetchall()
+            return [
+                ActionItem(
+                    id=r["id"],
+                    label=r["label"],
+                    points=r["points"],
+                    completed=bool(r["completed"]),
+                )
+                for r in rows
+            ]
+        finally:
+            conn.close()
 
     def get(self, action_id: str) -> Optional[ActionItem]:
-        return self._items.get(action_id)
+        """Fetch a single action item by ID."""
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT id, category, label, points, completed FROM actions WHERE id = ?",
+                (action_id,),
+            )
+            r = cursor.fetchone()
+            if r:
+                return ActionItem(
+                    id=r["id"],
+                    label=r["label"],
+                    points=r["points"],
+                    completed=bool(r["completed"]),
+                )
+            return None
+        finally:
+            conn.close()
 
     def set_completed(self, action_id: str, completed: bool) -> Optional[ActionItem]:
-        item = self._items.get(action_id)
-        if item is None:
-            return None
-        item.completed = completed
-        return item
+        """Update completion state of an action and automatically progress related challenges."""
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            # 1. Fetch action to confirm it exists
+            cursor.execute("SELECT * FROM actions WHERE id = ?", (action_id,))
+            row = cursor.fetchone()
+            if not row:
+                return None
+
+            # 2. Update action completion status
+            status_val = 1 if completed else 0
+            cursor.execute(
+                "UPDATE actions SET completed = ? WHERE id = ?", (status_val, action_id)
+            )
+
+            # 3. Gamification Engine: Increment or decrement community challenge progress based on action completion
+            delta = 1 if completed else -1
+
+            if action_id == "meatless-monday" or action_id == "plant-lunch":
+                # Advance Meatless Monday Streak
+                cursor.execute(
+                    "UPDATE challenges SET progress = MIN(goal, MAX(0, progress + ?)) WHERE id = 'meatless-monday-streak'",
+                    (delta,),
+                )
+            elif action_id == "public-transit" or action_id == "walk-trips":
+                # Advance Zero-drive week
+                cursor.execute(
+                    "UPDATE challenges SET progress = MIN(goal, MAX(0, progress + ?)) WHERE id = 'zero-drive-week'",
+                    (delta,),
+                )
+            elif action_id == "unplug-devices" or action_id == "set-ac-26" or action_id == "cold-wash":
+                # Advance Solar switch collective
+                cursor.execute(
+                    "UPDATE challenges SET progress = MIN(goal, MAX(0, progress + ?)) WHERE id = 'solar-switch-collective'",
+                    (delta,),
+                )
+
+            conn.commit()
+
+            # Return updated item
+            return ActionItem(
+                id=row["id"],
+                label=row["label"],
+                points=row["points"],
+                completed=completed,
+            )
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
 
     def total_points(self) -> int:
-        return sum(a.points for a in self._items.values() if a.completed)
+        """Calculate the sum of points for all completed actions."""
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT SUM(points) as total FROM actions WHERE completed = 1")
+            row = cursor.fetchone()
+            return row["total"] if row["total"] else 0
+        finally:
+            conn.close()
+
+    def list_challenges(self) -> List[dict]:
+        """Fetch all community challenges."""
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, name, members, progress, goal FROM challenges")
+            rows = cursor.fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()

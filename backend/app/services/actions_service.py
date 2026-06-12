@@ -18,7 +18,7 @@ class ActionNotFoundError(Exception):
 
 
 class ActionsService:
-    """Coordinates checklist reads and completion updates."""
+    """Coordinates checklist reads, completion updates, and challenges."""
 
     def __init__(self, repository: ActionsRepository) -> None:
         self._repo = repository
@@ -39,9 +39,12 @@ class ActionsService:
             actions=self._repo.list(),
         )
 
+    def list_challenges(self) -> List[dict]:
+        """Fetch current status of community challenges."""
+        return self._repo.list_challenges()
+
 
 @lru_cache
 def get_actions_service() -> ActionsService:
-    """FastAPI dependency provider (cached singleton -> shared in-memory state)."""
-
+    """FastAPI dependency provider (cached singleton -> shared database state)."""
     return ActionsService(ActionsRepository())

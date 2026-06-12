@@ -8,11 +8,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import health
 from app.api.v1 import api_router
 from app.config import Settings, get_settings
+from app.db import init_db
 from app.web import mount_spa
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
+
+    # Initialize the SQLite database
+    init_db()
 
     app = FastAPI(
         title=settings.app_name,

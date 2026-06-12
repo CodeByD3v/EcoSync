@@ -14,6 +14,10 @@ export default function Header({ footprint }) {
   const improved = delta_kg <= 0
   const TrendIcon = improved ? TrendingDown : TrendingUp
 
+  // Calculate daily averages from the annual total
+  const dailyValue = Math.round((total_kg / 365.0) * 10) / 10
+  const dailyDelta = Math.round((Math.abs(delta_kg) / 365.0) * 10) / 10
+
   return (
     <header className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
       {/* Greeting + headline */}
@@ -50,7 +54,7 @@ export default function Header({ footprint }) {
                   color: '#e2e8f0',
                   fontSize: 12,
                 }}
-                formatter={(v) => [`${v} ${unit}`, 'Footprint']}
+                formatter={(v) => [`${v} kg`, 'Monthly Footprint']}
               />
               <Area
                 type="monotone"
@@ -62,7 +66,7 @@ export default function Header({ footprint }) {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-        <p className="mt-1 text-[11px] uppercase tracking-widest text-slate-500">Last 7 days</p>
+        <p className="mt-1 text-[11px] uppercase tracking-widest text-slate-500">6-Month history</p>
       </div>
 
       {/* Daily Impact gauge */}
@@ -71,7 +75,7 @@ export default function Header({ footprint }) {
           Daily Impact
         </span>
         <div className="my-2">
-          <ImpactGauge value={total_kg} unit={unit} />
+          <ImpactGauge value={dailyValue} unit="kg CO₂e" />
         </div>
         <div
           className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${
@@ -81,7 +85,7 @@ export default function Header({ footprint }) {
           }`}
         >
           <TrendIcon size={16} />
-          {Math.abs(delta_kg)} {unit} {improved ? 'from yesterday' : 'more than yesterday'}
+          {dailyDelta} kg {improved ? 'less than average' : 'more than average'}
         </div>
       </div>
     </header>
