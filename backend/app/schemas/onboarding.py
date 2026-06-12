@@ -26,6 +26,7 @@ class OnboardingRequest(BaseModel):
 
     name: str
     city: str
+    zip_code: str = ""
     diet: str  # meat_heavy | flexitarian | vegetarian | vegan
     commute: str  # drive | transit | two_wheeler | walk
     housing: str  # house | apartment | shared
@@ -38,6 +39,7 @@ class OnboardingResponse(BaseModel):
     status: str
     name: str
     city: str
+    zip_code: str = ""
     grid_factors: GridFactors
     estimated_annual_kg: int
     message: str

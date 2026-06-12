@@ -173,6 +173,7 @@ export default function Onboarding({ onComplete }) {
 
   const [name, setName] = useState('')
   const [city, setCity] = useState('')
+  const [zipCode, setZipCode] = useState('')
   const [diet, setDiet] = useState(null)
   const [commute, setCommute] = useState(null)
   const [housing, setHousing] = useState(null)
@@ -186,18 +187,21 @@ export default function Onboarding({ onComplete }) {
     if (!city.trim()) return { gridKwh: 0.82, transportKm: 0.21, avgAnnualKg: 2000 }
     return getGridFactor(city)
   }, [city])
-  const liveFootprint = useMemo(
-    () => estimateFootprint(gridFactor, { diet, commute, housing }),
-    [gridFactor, diet, commute, housing],
-  )
+  const liveFootprint = useMemo(() => {
+    if (!city.trim() && diet === null && commute === null && housing === null) {
+      return 2000
+    }
+    return estimateFootprint(gridFactor, { diet, commute, housing })
+  }, [gridFactor, diet, commute, housing, city])
 
-  const step1Valid = name.trim() !== '' && city.trim() !== ''
+  const step1Valid = name.trim() !== '' && city.trim() !== '' && zipCode.trim() !== ''
   const step2Valid = diet !== null && commute !== null && housing !== null
 
   function finish(finalPermissions) {
     const profile = {
       name: name.trim(),
       city: city.trim(),
+      zip_code: zipCode.trim() || '560001',
       gridFactor,
       diet,
       commute,
@@ -210,6 +214,7 @@ export default function Onboarding({ onComplete }) {
       submitOnboarding({
         name: profile.name,
         city: profile.city,
+        zip_code: profile.zip_code,
         diet: profile.diet,
         commute: profile.commute,
         housing: profile.housing,
@@ -280,6 +285,15 @@ export default function Onboarding({ onComplete }) {
                     {(gridFactor.avgAnnualKg / 1000).toFixed(1)}t/yr
                   </p>
                 )}
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-400">Zip / Postal Code</label>
+                <input
+                  className={INPUT_CLASS}
+                  value={zipCode}
+                  onChange={(e) => setZipCode(e.target.value)}
+                  placeholder="560001"
+                />
               </div>
             </div>
             <div className="mt-7 flex justify-end">

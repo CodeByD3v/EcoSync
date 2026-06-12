@@ -4,12 +4,44 @@ import { useCallback, useState } from 'react'
 // only gated behind onboarding once. Reading/writing localStorage keeps the
 // flow working even when the backend is offline.
 const STORAGE_KEY = 'ecosync_profile'
+const ENCRYPTION_KEY = 'ecosync_secure_key_12983'
+
+function encrypt(text) {
+  let xored = ''
+  for (let i = 0; i < text.length; i++) {
+    xored += String.fromCharCode(text.charCodeAt(i) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length))
+  }
+  return btoa(encodeURIComponent(xored).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+    return String.fromCharCode(parseInt(p1, 16))
+  }))
+}
+
+function decrypt(cipher) {
+  try {
+    const xored = decodeURIComponent(Array.prototype.map.call(atob(cipher), function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+    }).join(''))
+    let result = ''
+    for (let i = 0; i < xored.length; i++) {
+      result += String.fromCharCode(xored.charCodeAt(i) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length))
+    }
+    return result
+  } catch (err) {
+    return null
+  }
+}
 
 function readProfile() {
   if (typeof window === 'undefined') return null
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : null
+    if (!raw) return null
+    // Support transition: if it's plaintext JSON, parse it; otherwise decrypt it.
+    if (raw.startsWith('{')) {
+      return JSON.parse(raw)
+    }
+    const decrypted = decrypt(raw)
+    return decrypted ? JSON.parse(decrypted) : null
   } catch {
     return null
   }
@@ -21,7 +53,8 @@ export function useUserProfile() {
   const saveProfile = useCallback((next) => {
     setProfile(next)
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      const encrypted = encrypt(JSON.stringify(next))
+      window.localStorage.setItem(STORAGE_KEY, encrypted)
     } catch {
       // Ignore write failures (e.g. storage disabled) — the in-memory profile
       // still drives the current session.

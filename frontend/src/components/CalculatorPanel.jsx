@@ -113,10 +113,10 @@ export default function CalculatorPanel({ inputs, onChange, footprint }) {
                 onChange={(e) => onChange('diet', e.target.value)}
                 className="w-full rounded-xl border border-panelborder bg-slatebg/60 px-4 py-2.5 text-sm text-white focus:border-eco-neon outline-none"
               >
-                <option value="meat_heavy">Meat-heavy (Daily meat)</option>
-                <option value="mixed">Mixed / Flexitarian</option>
+                <option value="meat_heavy">Meat-heavy</option>
+                <option value="mixed">Flexitarian</option>
                 <option value="vegetarian">Vegetarian</option>
-                <option value="vegan">Vegan (Plant-based)</option>
+                <option value="vegan">Vegan</option>
               </select>
             </div>
           </div>

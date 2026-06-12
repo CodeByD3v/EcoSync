@@ -64,10 +64,10 @@ def onboard(payload: OnboardingRequest) -> OnboardingResponse:
         cursor.execute("DELETE FROM profile")
         cursor.execute(
             """
-            INSERT INTO profile (name, city, km_driven_per_week, flights_per_year, kwh_per_month, diet, new_items_per_month)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO profile (name, city, zip_code, km_driven_per_week, flights_per_year, kwh_per_month, diet, new_items_per_month)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (payload.name, payload.city, km_per_week, flights, kwh_per_month, diet_mapped, new_items)
+            (payload.name, payload.city, payload.zip_code, km_per_week, flights, kwh_per_month, diet_mapped, new_items)
         )
         # Reset all checklist items to incomplete for a new onboarding
         cursor.execute("UPDATE actions SET completed = 0")
@@ -88,6 +88,7 @@ def onboard(payload: OnboardingRequest) -> OnboardingResponse:
         status="ok",
         name=payload.name,
         city=payload.city,
+        zip_code=payload.zip_code,
         grid_factors=gf,
         estimated_annual_kg=total,
         message=message,

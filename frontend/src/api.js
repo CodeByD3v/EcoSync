@@ -42,3 +42,9 @@ export const calculateFootprint = (payload) =>
 export const getUserProfile = () => request('/footprint/profile')
 
 export const getChallenges = () => request('/actions/challenges')
+
+export const triggerTelemetryTick = (eventType) =>
+  request('/footprint/telemetry-tick', {
+    method: 'POST',
+    body: JSON.stringify({ event_type: eventType }),
+  })

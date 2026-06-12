@@ -40,20 +40,35 @@ _GLOBAL_FALLBACK = GridFactors(grid_kwh=0.49, transport_km=0.17, avg_annual_kg=4
 
 
 def lookup_grid_factor(city: str) -> GridFactors:
+    factors = _INDIA_FALLBACK
     if not city:
-        return _GLOBAL_FALLBACK
-    needle = city.strip().lower()
-    if not needle:
-        return _GLOBAL_FALLBACK
+        factors = _GLOBAL_FALLBACK
+    else:
+        needle = city.strip().lower()
+        if not needle:
+            factors = _GLOBAL_FALLBACK
+        else:
+            found = False
+            for keys, f in _REGIONS:
+                if any(key in needle for key in keys):
+                    factors = f
+                    found = True
+                    break
+            if not found:
+                if any(k in needle for k in ["india", "bharat"]):
+                    factors = _INDIA_FALLBACK
+                else:
+                    factors = _GLOBAL_FALLBACK
 
-    for keys, factors in _REGIONS:
-        if any(key in needle for key in keys):
-            return factors
+    # Dynamically inject live carbon intensity based on time of day / Electricity Maps API
+    from app.services.grid_intensity_service import get_grid_intensity_service
+    realtime_kwh = get_grid_intensity_service().get_realtime_intensity(city)
 
-    if any(k in needle for k in ["india", "bharat"]):
-        return _INDIA_FALLBACK
-
-    return _GLOBAL_FALLBACK
+    return GridFactors(
+        grid_kwh=realtime_kwh,
+        transport_km=factors.transport_km,
+        avg_annual_kg=factors.avg_annual_kg
+    )
 
 
 # Mapping of categories for response schemas
@@ -79,10 +94,13 @@ class FootprintService:
             if row:
                 d = dict(row)
                 d.pop("id", None)
+                if "zip_code" not in d or not d["zip_code"]:
+                    d["zip_code"] = "560001" if d.get("city", "").lower() == "bengaluru" else "400001"
                 return d
             return {
                 "name": "Arjun",
                 "city": "Bengaluru",
+                "zip_code": "560001",
                 "km_driven_per_week": 100.0,
                 "flights_per_year": 2,
                 "kwh_per_month": 200.0,
@@ -97,9 +115,10 @@ class FootprintService:
         conn = get_db_connection()
         try:
             cursor = conn.cursor()
-            cursor.execute("SELECT id FROM profile LIMIT 1")
+            cursor.execute("SELECT id, zip_code FROM profile LIMIT 1")
             row = cursor.fetchone()
             if row:
+                zip_val = data.get("zip_code", row["zip_code"] if "zip_code" in row.keys() else "")
                 cursor.execute(
                     """
                     UPDATE profile
@@ -107,7 +126,8 @@ class FootprintService:
                         flights_per_year = ?,
                         kwh_per_month = ?,
                         diet = ?,
-                        new_items_per_month = ?
+                        new_items_per_month = ?,
+                        zip_code = ?
                     WHERE id = ?
                     """,
                     (
@@ -116,16 +136,18 @@ class FootprintService:
                         data["kwh_per_month"],
                         data["diet"],
                         data["new_items_per_month"],
+                        zip_val,
                         row["id"],
                     ),
                 )
             else:
                 cursor.execute(
                     """
-                    INSERT INTO profile (name, city, km_driven_per_week, flights_per_year, kwh_per_month, diet, new_items_per_month)
-                    VALUES ('Arjun', 'Bengaluru', ?, ?, ?, ?, ?)
+                    INSERT INTO profile (name, city, zip_code, km_driven_per_week, flights_per_year, kwh_per_month, diet, new_items_per_month)
+                    VALUES ('Arjun', 'Bengaluru', ?, ?, ?, ?, ?, ?)
                     """,
                     (
+                        data.get("zip_code", "560001"),
                         data["km_driven_per_week"],
                         data["flights_per_year"],
                         data["kwh_per_month"],
@@ -133,6 +155,48 @@ class FootprintService:
                         data["new_items_per_month"],
                     ),
                 )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def process_telemetry_tick(self, event_type: str) -> None:
+        """Process a simulated telemetry event by updating the profile in database."""
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM profile LIMIT 1")
+            row = cursor.fetchone()
+            if not row:
+                return
+            
+            p_id = row["id"]
+            km = row["km_driven_per_week"]
+            flights = row["flights_per_year"]
+            kwh = row["kwh_per_month"]
+            new_items = row["new_items_per_month"]
+            
+            if event_type == "drive":
+                km = min(2000.0, km + 25.0)
+            elif event_type == "transit":
+                km = max(0.0, km - 30.0)
+            elif event_type == "flight":
+                flights = min(50, flights + 1)
+            elif event_type == "utility":
+                kwh = min(2000.0, kwh + 15.0)
+            elif event_type == "shopping":
+                new_items = min(100, new_items + 1)
+                
+            cursor.execute(
+                """
+                UPDATE profile
+                SET km_driven_per_week = ?,
+                    flights_per_year = ?,
+                    kwh_per_month = ?,
+                    new_items_per_month = ?
+                WHERE id = ?
+                """,
+                (km, flights, kwh, new_items, p_id)
+            )
             conn.commit()
         finally:
             conn.close()

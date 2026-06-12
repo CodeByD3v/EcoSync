@@ -19,21 +19,37 @@ const GLOBAL_FALLBACK = { gridKwh: 0.49, transportKm: 0.17, avgAnnualKg: 4700 }
 const INDIA_KEYS = ['india', 'bharat']
 
 export function getGridFactor(city) {
-  if (!city) return GLOBAL_FALLBACK
-
-  const needle = city.trim().toLowerCase()
-  if (!needle) return GLOBAL_FALLBACK
-
-  for (const region of REGIONS) {
-    if (region.keys.some((key) => needle.includes(key))) {
-      const { gridKwh, transportKm, avgAnnualKg } = region
-      return { gridKwh, transportKm, avgAnnualKg }
+  let baseFactor = GLOBAL_FALLBACK
+  if (city) {
+    const needle = city.trim().toLowerCase()
+    if (needle) {
+      let found = false
+      for (const region of REGIONS) {
+        if (region.keys.some((key) => needle.includes(key))) {
+          baseFactor = region
+          found = true
+          break
+        }
+      }
+      if (!found) {
+        if (INDIA_KEYS.some((key) => needle.includes(key))) {
+          baseFactor = INDIA_FALLBACK
+        }
+      }
     }
   }
 
-  if (INDIA_KEYS.some((key) => needle.includes(key))) {
-    return INDIA_FALLBACK
+  // Calculate dynamic solar time-of-day multiplier to match the backend calculations
+  const currentHour = new Date().getHours()
+  let multiplier = 1.00
+  if (currentHour >= 10 && currentHour <= 15) {
+    multiplier = 0.85 // Solar peak: 15% drop in carbon intensity
+  } else if (currentHour >= 18 && currentHour <= 22) {
+    multiplier = 1.10 // Evening peak: 10% increase in carbon intensity
   }
 
-  return GLOBAL_FALLBACK
+  const { gridKwh, transportKm, avgAnnualKg } = baseFactor
+  const dynamicGridKwh = Math.round(gridKwh * multiplier * 1000) / 1000
+
+  return { gridKwh: dynamicGridKwh, transportKm, avgAnnualKg }
 }

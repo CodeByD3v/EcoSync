@@ -35,6 +35,7 @@ def init_db() -> None:
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         city TEXT NOT NULL,
+        zip_code TEXT DEFAULT '',
         km_driven_per_week REAL DEFAULT 100.0,
         flights_per_year INTEGER DEFAULT 2,
         kwh_per_month REAL DEFAULT 200.0,
@@ -42,6 +43,11 @@ def init_db() -> None:
         new_items_per_month INTEGER DEFAULT 5
     );
     """)
+
+    try:
+        cursor.execute("ALTER TABLE profile ADD COLUMN zip_code TEXT DEFAULT '';")
+    except sqlite3.OperationalError:
+        pass
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS actions (

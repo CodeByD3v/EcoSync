@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 
 from app.schemas import DailyFootprint, FootprintRequest
 from app.services import FootprintService, get_footprint_service
@@ -87,3 +88,17 @@ def demo_automated_tracking():
             "new_items_per_month": 4
         }
     }
+
+
+class TelemetryTickRequest(BaseModel):
+    event_type: str
+
+
+@router.post("/telemetry-tick", response_model=DailyFootprint)
+def telemetry_tick(
+    payload: TelemetryTickRequest,
+    service: FootprintService = Depends(get_footprint_service),
+) -> DailyFootprint:
+    """Processes a simulated background telemetry event and recalculates footprint."""
+    service.process_telemetry_tick(payload.event_type)
+    return service.get_daily()

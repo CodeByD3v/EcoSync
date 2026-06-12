@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
-import { Leaf, WifiOff, LayoutDashboard, Calculator, ListChecks, Trophy, TrendingDown, TrendingUp } from 'lucide-react'
+import { Leaf, WifiOff, LayoutDashboard, Calculator, ListChecks, Trophy, TrendingDown, TrendingUp, Radio, Gift } from 'lucide-react'
 import Header from './components/Header.jsx'
 import BreakdownChart from './components/BreakdownChart.jsx'
 import InsightsPanel from './components/InsightsPanel.jsx'
@@ -7,6 +7,10 @@ import ActionsChecklist from './components/ActionsChecklist.jsx'
 import CalculatorPanel from './components/CalculatorPanel.jsx'
 import ChallengesPanel from './components/ChallengesPanel.jsx'
 import Card from './components/Card.jsx'
+import IngestionPanel from './components/IngestionPanel.jsx'
+import TranslationEngine from './components/TranslationEngine.jsx'
+import LocalBenchmark from './components/LocalBenchmark.jsx'
+import RewardsPanel from './components/RewardsPanel.jsx'
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from 'recharts'
 import {
   completeAction,
@@ -16,6 +20,7 @@ import {
   getUserProfile,
   calculateFootprint,
   getChallenges,
+  triggerTelemetryTick,
 } from './api.js'
 import {
   FALLBACK_ACTIONS,
@@ -111,6 +116,57 @@ export default function App() {
   const [offline, setOffline] = useState(false)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('dashboard')
+  const [toast, setToast] = useState(null)
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type })
+    setTimeout(() => {
+      setToast(null)
+    }, 4500)
+  }
+
+  const handleTelemetryTick = async (type, label) => {
+    try {
+      if (offline) {
+        let nextInputs = { ...calcInputs }
+        if (type === 'drive') nextInputs.km_driven_per_week = Math.min(2000, calcInputs.km_driven_per_week + 25)
+        if (type === 'transit') nextInputs.km_driven_per_week = Math.max(0, calcInputs.km_driven_per_week - 30)
+        if (type === 'flight') nextInputs.flights_per_year = Math.min(50, calcInputs.flights_per_year + 1)
+        if (type === 'utility') nextInputs.kwh_per_month = Math.min(2000, calcInputs.kwh_per_month + 15)
+        if (type === 'shopping') nextInputs.new_items_per_month = Math.min(100, calcInputs.new_items_per_month + 1)
+
+        setCalcInputs(nextInputs)
+        const calculated = calculateFootprintLocal(nextInputs, profile?.city)
+        setFootprint(calculated)
+        showToast(`Simulated telemetry event capture: ${label}`)
+      } else {
+        const fp = await triggerTelemetryTick(type)
+        setFootprint(fp)
+
+        const prof = await getUserProfile()
+        setCalcInputs({
+          km_driven_per_week: prof.km_driven_per_week ?? 100,
+          flights_per_year: prof.flights_per_year ?? 2,
+          kwh_per_month: prof.kwh_per_month ?? 200,
+          diet: prof.diet ?? 'mixed',
+          new_items_per_month: prof.new_items_per_month ?? 5,
+        })
+
+        const nextInsights = await getInsights()
+        setInsights(nextInsights)
+        showToast(`Simulated telemetry integrated: ${label}`)
+      }
+    } catch (err) {
+      console.error(err)
+      showToast(`Telemetry processing error: ${err.message}`, 'error')
+      throw err
+    }
+  }
+
+  const handleRedeemPoints = (cost, successMsg) => {
+    setTotalPoints((prev) => Math.max(0, prev - cost))
+    showToast(successMsg)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -307,11 +363,13 @@ export default function App() {
           </div>
 
           {/* Navigation Tabs */}
-          <div className="flex bg-slatebg/80 border border-panelborder p-1 rounded-xl">
+          <div className="flex bg-slatebg/80 border border-panelborder p-1 rounded-xl flex-wrap">
             {[
               { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
               { id: 'calculator', label: 'Calculator', icon: Calculator },
               { id: 'actions', label: 'Actions Plan', icon: ListChecks },
+              { id: 'ingestion', label: 'Auto-Sync', icon: Radio },
+              { id: 'rewards', label: 'Rewards Shop', icon: Gift },
             ].map((t) => {
               const Icon = t.icon
               const active = activeTab === t.id
@@ -319,7 +377,7 @@ export default function App() {
                 <button
                   key={t.id}
                   onClick={() => setActiveTab(t.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
                     active
                       ? 'bg-eco-neon/15 text-eco-neon shadow-glow border border-eco-neon/20'
                       : 'text-slate-400 hover:text-white border border-transparent'
@@ -365,6 +423,24 @@ export default function App() {
             {/* Greeting Header */}
             <Header footprint={footprint} profileName={profile?.name} />
 
+            {/* Peak Demand Advisory */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-xs">
+              <div className="flex items-center gap-2 text-amber-400">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-505 bg-amber-500"></span>
+                </span>
+                <span className="font-bold">⚠️ LIVE GRID ADVISORY:</span>
+                <span className="text-slate-300">Peak hours load on Bengaluru energy grid. Shift heavy appliance usage to earn +15 pts.</span>
+              </div>
+              <button 
+                onClick={() => setActiveTab('actions')}
+                className="font-bold text-eco-neon hover:text-white uppercase tracking-wider transition shrink-0"
+              >
+                View Actions Plan →
+              </button>
+            </div>
+
             {/* Impact Metric Cards */}
             <div className="grid gap-5 sm:grid-cols-3">
               <div className="bg-panel border border-panelborder rounded-2xl p-5 flex flex-col justify-between">
@@ -400,6 +476,11 @@ export default function App() {
             {/* Visualisations Layout */}
             <div className="grid gap-5 md:grid-cols-2">
               <BreakdownChart breakdown={footprint.breakdown} total={`${(footprint.total_kg / 1000).toFixed(1)}t`} unit="CO₂/yr" />
+              <LocalBenchmark userFootprint={footprint.total_kg} zipCode={profile?.zip_code || '560001'} avgAnnualKg={profile?.gridFactor?.avgAnnualKg || 2000} />
+
+              <div className="md:col-span-2">
+                <TranslationEngine dailyValue={Math.round((footprint.total_kg / 365.0) * 10) / 10} />
+              </div>
 
               {/* 6-Month Trend */}
               <Card title="6-Month History" subtitle="Your monthly emissions trajectory." icon={Leaf} action={<StatusBadge total={footprint.total_kg} />}>
@@ -434,6 +515,24 @@ export default function App() {
                 </div>
               </Card>
 
+              {/* Active Habit Streaks Card */}
+              <Card title="Active Habit Streaks" subtitle="Consistent positive daily actions." icon={Trophy}>
+                <div className="space-y-3 py-1">
+                  <div className="flex items-center justify-between p-3.5 bg-slatebg/40 border border-panelborder rounded-xl">
+                    <span className="text-xs font-semibold text-slate-300">🔥 Public Transit Streak</span>
+                    <span className="text-xs font-extrabold text-eco-lime">4 consecutive days</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3.5 bg-slatebg/40 border border-panelborder rounded-xl">
+                    <span className="text-xs font-semibold text-slate-300">🔥 Zero-Emission Commute</span>
+                    <span className="text-xs font-extrabold text-eco-lime">2 consecutive days</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3.5 bg-slatebg/40 border border-panelborder rounded-xl">
+                    <span className="text-xs font-semibold text-slate-300">🔥 Plant-Based Lunches</span>
+                    <span className="text-xs font-extrabold text-eco-lime">5 consecutive days</span>
+                  </div>
+                </div>
+              </Card>
+
               {/* Dynamic Insights Panel */}
               <div className="md:col-span-2">
                 <InsightsPanel insights={insights} />
@@ -458,7 +557,28 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/* Tab 4: INGESTION GRID */}
+        {activeTab === 'ingestion' && (
+          <IngestionPanel onTelemetryTick={handleTelemetryTick} offline={offline} />
+        )}
+
+        {/* Tab 5: REWARDS SHOP */}
+        {activeTab === 'rewards' && (
+          <RewardsPanel totalPoints={totalPoints} onRedeem={handleRedeemPoints} />
+        )}
       </div>
+
+      {/* Toast Alert */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-xl border border-eco-neon/30 bg-[#0b0f14]/95 backdrop-blur px-4 py-3 text-xs font-bold text-white shadow-xl shadow-black/50 ring-1 ring-eco-neon/20 animate-bounce max-w-sm border-eco-neon/30 text-left">
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-eco-neon opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-eco-neon"></span>
+          </span>
+          <span>{toast.message}</span>
+        </div>
+      )}
     </div>
   )
 }
