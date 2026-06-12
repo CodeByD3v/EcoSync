@@ -13,3 +13,7 @@ frontend/dist/
 # Env
 .env
 *.local
+
+# Database
+*.db
+
