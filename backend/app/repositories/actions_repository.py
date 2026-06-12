@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from app.db import get_db_connection
+from app.core import db_session
 from app.schemas import ActionItem
 
 
@@ -13,8 +13,7 @@ class ActionsRepository:
 
     def list(self) -> List[ActionItem]:
         """Query and return all checklist items."""
-        conn = get_db_connection()
-        try:
+        with db_session() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT id, category, label, points, completed FROM actions")
             rows = cursor.fetchall()
@@ -27,13 +26,10 @@ class ActionsRepository:
                 )
                 for r in rows
             ]
-        finally:
-            conn.close()
 
     def get(self, action_id: str) -> Optional[ActionItem]:
         """Fetch a single action item by ID."""
-        conn = get_db_connection()
-        try:
+        with db_session() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 "SELECT id, category, label, points, completed FROM actions WHERE id = ?",
@@ -48,13 +44,10 @@ class ActionsRepository:
                     completed=bool(r["completed"]),
                 )
             return None
-        finally:
-            conn.close()
 
     def set_completed(self, action_id: str, completed: bool) -> Optional[ActionItem]:
         """Update completion state of an action and automatically progress related challenges."""
-        conn = get_db_connection()
-        try:
+        with db_session() as conn:
             cursor = conn.cursor()
             # 1. Fetch action to confirm it exists
             cursor.execute("SELECT * FROM actions WHERE id = ?", (action_id,))
@@ -90,8 +83,6 @@ class ActionsRepository:
                     (delta,),
                 )
 
-            conn.commit()
-
             # Return updated item
             return ActionItem(
                 id=row["id"],
@@ -99,30 +90,19 @@ class ActionsRepository:
                 points=row["points"],
                 completed=completed,
             )
-        except Exception:
-            conn.rollback()
-            raise
-        finally:
-            conn.close()
 
     def total_points(self) -> int:
         """Calculate the sum of points for all completed actions."""
-        conn = get_db_connection()
-        try:
+        with db_session() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT SUM(points) as total FROM actions WHERE completed = 1")
             row = cursor.fetchone()
             return row["total"] if row["total"] else 0
-        finally:
-            conn.close()
 
     def list_challenges(self) -> List[dict]:
         """Fetch all community challenges."""
-        conn = get_db_connection()
-        try:
+        with db_session() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT id, name, members, progress, goal FROM challenges")
             rows = cursor.fetchall()
             return [dict(r) for r in rows]
-        finally:
-            conn.close()

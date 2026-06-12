@@ -13,8 +13,7 @@ import urllib.request
 from functools import lru_cache
 from typing import List
 
-from app.config import get_settings
-from app.db import get_db_connection
+from app.core import get_settings
 from app.schemas import Insight
 from app.services.footprint_service import get_footprint_service, EF
 

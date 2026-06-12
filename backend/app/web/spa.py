@@ -13,7 +13,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.config import Settings
+from app.core import Settings
 
 
 def mount_spa(app: FastAPI, settings: Settings) -> None:

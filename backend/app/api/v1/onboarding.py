@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from app.db import get_db_connection
+from app.core import db_session
 from app.schemas import OnboardingRequest, OnboardingResponse
 from app.services.footprint_service import get_footprint_service
 
@@ -57,26 +57,22 @@ def onboard(payload: OnboardingRequest) -> OnboardingResponse:
     gf = calc_res["grid_factors"]
 
     # 3. Save to Database
-    conn = get_db_connection()
-    cursor = conn.cursor()
     try:
-        # Clear existing profile (simplifies local testing/re-onboarding)
-        cursor.execute("DELETE FROM profile")
-        cursor.execute(
-            """
-            INSERT INTO profile (name, city, zip_code, km_driven_per_week, flights_per_year, kwh_per_month, diet, new_items_per_month)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (payload.name, payload.city, payload.zip_code, km_per_week, flights, kwh_per_month, diet_mapped, new_items)
-        )
-        # Reset all checklist items to incomplete for a new onboarding
-        cursor.execute("UPDATE actions SET completed = 0")
-        conn.commit()
+        with db_session() as conn:
+            cursor = conn.cursor()
+            # Clear existing profile (simplifies local testing/re-onboarding)
+            cursor.execute("DELETE FROM profile")
+            cursor.execute(
+                """
+                INSERT INTO profile (name, city, zip_code, km_driven_per_week, flights_per_year, kwh_per_month, diet, new_items_per_month)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (payload.name, payload.city, payload.zip_code, km_per_week, flights, kwh_per_month, diet_mapped, new_items)
+            )
+            # Reset all checklist items to incomplete for a new onboarding
+            cursor.execute("UPDATE actions SET completed = 0")
     except Exception as e:
-        conn.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-    finally:
-        conn.close()
 
     comparison = "above" if total > gf.avg_annual_kg else "below"
     message = (

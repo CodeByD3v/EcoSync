@@ -197,7 +197,7 @@ export default function Onboarding({ onComplete }) {
   const step1Valid = name.trim() !== '' && city.trim() !== '' && zipCode.trim() !== ''
   const step2Valid = diet !== null && commute !== null && housing !== null
 
-  function finish(finalPermissions) {
+  async function finish(finalPermissions) {
     const profile = {
       name: name.trim(),
       city: city.trim(),
@@ -209,9 +209,8 @@ export default function Onboarding({ onComplete }) {
       permissions: finalPermissions,
     }
 
-    // Fire-and-forget: the flow must work even when the backend is offline.
     try {
-      submitOnboarding({
+      await submitOnboarding({
         name: profile.name,
         city: profile.city,
         zip_code: profile.zip_code,
@@ -219,9 +218,9 @@ export default function Onboarding({ onComplete }) {
         commute: profile.commute,
         housing: profile.housing,
         permissions: profile.permissions,
-      })?.catch(() => {})
-    } catch {
-      // Ignore — onboarding state is persisted locally regardless.
+      })
+    } catch (err) {
+      console.warn("Backend onboarding failed or offline, proceeding offline:", err)
     }
 
     onComplete(profile)

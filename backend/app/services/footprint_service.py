@@ -7,7 +7,7 @@ and dynamically updates history trends.
 from __future__ import annotations
 
 from datetime import date
-from app.db import get_db_connection
+from app.core import db_session
 from app.schemas import DailyFootprint, CategoryBreakdown, TrendPoint
 from app.schemas.onboarding import GridFactors
 
@@ -86,8 +86,7 @@ class FootprintService:
 
     def get_profile(self) -> dict:
         """Fetch the current profile settings from SQLite."""
-        conn = get_db_connection()
-        try:
+        with db_session() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM profile LIMIT 1")
             row = cursor.fetchone()
@@ -107,13 +106,10 @@ class FootprintService:
                 "diet": "mixed",
                 "new_items_per_month": 5,
             }
-        finally:
-            conn.close()
 
     def update_profile(self, data: dict) -> None:
         """Update profile parameters in SQLite."""
-        conn = get_db_connection()
-        try:
+        with db_session() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT id, zip_code FROM profile LIMIT 1")
             row = cursor.fetchone()
@@ -155,14 +151,10 @@ class FootprintService:
                         data["new_items_per_month"],
                     ),
                 )
-            conn.commit()
-        finally:
-            conn.close()
 
     def process_telemetry_tick(self, event_type: str) -> None:
         """Process a simulated telemetry event by updating the profile in database."""
-        conn = get_db_connection()
-        try:
+        with db_session() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM profile LIMIT 1")
             row = cursor.fetchone()
@@ -197,9 +189,6 @@ class FootprintService:
                 """,
                 (km, flights, kwh, new_items, p_id)
             )
-            conn.commit()
-        finally:
-            conn.close()
 
     def calculate_co2_breakdown(
         self,
@@ -252,21 +241,17 @@ class FootprintService:
 
         # Dynamic update of history: set June's footprint to (total_annual / 12)
         current_monthly_kg = round(total_annual / 12.0, 1)
-        conn = get_db_connection()
-        try:
+        with db_session() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 "INSERT INTO history (month, total) VALUES ('Jun', ?) ON CONFLICT(month) DO UPDATE SET total = ?",
                 (current_monthly_kg, current_monthly_kg),
             )
-            conn.commit()
 
             # Load trend from history
             cursor.execute("SELECT month, total FROM history ORDER BY rowid ASC")
             trend_rows = cursor.fetchall()
             trend = [TrendPoint(label=r["month"], value=r["total"]) for r in trend_rows]
-        finally:
-            conn.close()
 
         # Build breakdown
         breakdown = [

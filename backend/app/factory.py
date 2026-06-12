@@ -7,8 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import health
 from app.api.v1 import api_router
-from app.config import Settings, get_settings
-from app.db import init_db
+from app.core import Settings, get_settings, init_db
 from app.web import mount_spa
 
 

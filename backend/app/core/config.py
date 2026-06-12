@@ -10,8 +10,8 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
-# backend/ directory (two levels up from this file: app/config.py -> backend/).
-BACKEND_DIR = Path(__file__).resolve().parent.parent
+# backend/ directory (three levels up from this file: app/core/config.py -> backend/).
+BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 def _csv_env(name: str, default: str) -> list[str]:
@@ -73,4 +73,3 @@ class Settings:
 
 def get_settings() -> Settings:
     return Settings()
-
