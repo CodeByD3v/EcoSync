@@ -7,6 +7,7 @@ from app.schemas.actions import (
 )
 from app.schemas.footprint import CategoryBreakdown, DailyFootprint, TrendPoint
 from app.schemas.insights import Insight
+from app.schemas.onboarding import OnboardingRequest, OnboardingResponse
 
 __all__ = [
     "ActionItem",
@@ -16,4 +17,6 @@ __all__ = [
     "DailyFootprint",
     "TrendPoint",
     "Insight",
+    "OnboardingRequest",
+    "OnboardingResponse",
 ]

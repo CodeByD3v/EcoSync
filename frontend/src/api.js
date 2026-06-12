@@ -28,3 +28,6 @@ export const completeAction = (actionId, completed) =>
     method: 'POST',
     body: JSON.stringify({ action_id: actionId, completed }),
   })
+
+export const submitOnboarding = (payload) =>
+  request('/onboard', { method: 'POST', body: JSON.stringify(payload) })

@@ -6,8 +6,11 @@ import InsightsPanel from './components/InsightsPanel.jsx'
 import ActionsChecklist from './components/ActionsChecklist.jsx'
 import { completeAction, getActions, getDailyFootprint, getInsights } from './api.js'
 import { FALLBACK_ACTIONS, FALLBACK_FOOTPRINT, FALLBACK_INSIGHTS } from './fallbackData.js'
+import useUserProfile from './hooks/useUserProfile.js'
+import Onboarding from './components/Onboarding.jsx'
 
 export default function App() {
+  const { profile, saveProfile } = useUserProfile()
   const [footprint, setFootprint] = useState(null)
   const [insights, setInsights] = useState([])
   const [actions, setActions] = useState([])
@@ -70,6 +73,12 @@ export default function App() {
       setPending(null)
     }
   }
+
+  // Gate the dashboard behind a one-time onboarding flow. Placed after the
+  // hooks above so hook order stays stable across the onboarding → dashboard
+  // transition (an early return before those hooks would violate the Rules of
+  // Hooks).
+  if (!profile) return <Onboarding onComplete={saveProfile} />
 
   if (loading || !footprint) {
     return (
