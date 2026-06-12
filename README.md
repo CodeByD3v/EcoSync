@@ -141,7 +141,23 @@ Built in **React 18** with **Vite** and **Tailwind CSS**, the UI features a prem
 
 ---
 
-## ✨ 3. Key Features
+## 📸 3. Visual Demonstration & UI Showcase
+
+Judges can preview the high-fidelity dark-mode application interfaces below:
+
+### Onboarding Flow Wizard
+A conversational onboarding form that live-estimates baseline carbon footprint before storing the profile in SQLite.
+
+![Onboarding Screenshot](docs/assets/ecosync_onboarding_screenshot.png)
+
+### User Impact Dashboard
+Features the live emissions breakdown dial, the Cheeseburger Index converter, monthly area trends, active community challenges, and Gemini AI-powered recommendations.
+
+![Dashboard Screenshot](docs/assets/ecosync_dashboard_screenshot.png)
+
+---
+
+## ✨ 4. Key Features
 
 * **Automated Data Ingestion (Simulated in MVP):** EcoSync demonstrates how telemetry replaces manual logging. In production, background jobs fetch Plaid transactions and Google Fit steps, while the MVP simulates these data points cleanly using structured seed endpoints.
 * **The Cheeseburger Index:** By translating invisible emissions into food units, the user can understand their impact immediately (e.g., *"My commute today was equivalent to 2.2 cheeseburgers"*).
@@ -151,17 +167,35 @@ Built in **React 18** with **Vite** and **Tailwind CSS**, the UI features a prem
 
 ---
 
-## 🛠️ 4. Technical MVP Setup
+## 🛠️ 5. Technical MVP Setup
 
 Follow these instructions to run the EcoSync MVP locally.
 
-### Prerequisites
-* **Python 3.10+**
-* **Node.js 18+** & **npm**
+### ⚡ Quick Start (Two Commands)
+
+To run the application locally, open two terminal windows and execute:
+
+**Terminal 1 (Backend):**
+```bash
+cd backend && pip install -r requirements.txt && uvicorn main:app --reload
+```
+* **API Docs URL:** [http://localhost:8000/docs](http://localhost:8000/docs) (Interactive Swagger UI)
+
+**Terminal 2 (Frontend):**
+```bash
+cd frontend && npm install && npm run dev
+```
+* **Dashboard URL:** [http://localhost:5173](http://localhost:5173)
 
 ---
 
-### 💻 Step 1: Start the Backend (FastAPI)
+### 💻 Detailed Setup Instructions
+
+#### Prerequisites
+* **Python 3.10+**
+* **Node.js 18+** & **npm**
+
+#### Step 1: Start the Backend (FastAPI)
 
 1. Open a terminal and navigate to the `backend/` folder:
    ```bash
@@ -194,7 +228,6 @@ Follow these instructions to run the EcoSync MVP locally.
    Copy the `.env` settings to enable the LLM functionality (add your key to `GEMINI_API_KEY` to test real LLM nudges).
    ```bash
    # ecosync.db will be created automatically in the backend folder
-   ECOSYNC_DB_PATH=ecosync.db
    GEMINI_API_KEY=YOUR_GEMINI_API_KEY
    ```
 
@@ -202,11 +235,8 @@ Follow these instructions to run the EcoSync MVP locally.
    ```bash
    uvicorn main:app --reload --port 8000
    ```
-   * **API Docs URL:** [http://localhost:8000/docs](http://localhost:8000/docs) (Interactive Swagger UI)
 
----
-
-### 🎨 Step 2: Start the Frontend (React + Vite)
+#### Step 2: Start the Frontend (React + Vite)
 
 1. Open a new terminal window and navigate to the `frontend/` folder:
    ```bash
@@ -222,7 +252,6 @@ Follow these instructions to run the EcoSync MVP locally.
    ```bash
    npm run dev
    ```
-   * **Dashboard URL:** [http://localhost:5173](http://localhost:5173)
 
 ---
 
@@ -243,13 +272,13 @@ EcoSync is designed to compile the frontend and backend into a single container 
 
 ---
 
-## 🏆 5. Why EcoSync Wins (The Prompt Wars Edge)
+## 🏆 6. Why EcoSync Wins (The Prompt Wars Edge)
 
 EcoSync stands out in the **Prompt Wars Challenge** because it pairs advanced behavioral psychology with a robust technical foundation:
 
 * **Progressive Onboarding:** Instead of bombarding the user with complex questionnaires on sign-up, the conversational AI coach extracts lifestyle vectors gently. By the time the user enters the app, their customized baseline is already calculated.
 * **The Guilt-Free UX:** Most green apps trigger "climate guilt". EcoSync uses gamification, community streaks, and positive reinforcement to build habit loops.
-* **Privacy-First Telemetry:** The application demonstrates a cryptographic, secure consent model where users authorize device-level sensors (Google Fit API) and read-only financial tokens (Plaid) under strict local processing rules.
+* **Privacy-First Telemetry:** The application demonstrates a secure consent model where users authorize device-level sensors (Google Fit API) and read-only financial tokens (Plaid) under strict local processing rules.
 * **Transparent Science:** Unlike black-box carbon estimators, EcoSync links regional variables directly to international standards (IPCC/EPA) and local grid configurations (India Central Electricity Authority), giving users maximum confidence in their tracking.
 
 ---
