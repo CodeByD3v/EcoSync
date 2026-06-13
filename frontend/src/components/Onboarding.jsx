@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Car, CreditCard, Home, Leaf, Lock, MapPin, Salad, Zap } from 'lucide-react'
 import { getGridFactor } from '../lib/gridFactors.js'
-import { submitOnboarding } from '../api.js'
+import { submitOnboarding, parseOnboarding } from '../api.js'
 
 const COMMUTE_MAPPING = { drive: 200.0, two_wheeler: 120.0, transit: 50.0, walk: 0.0 }
 const HOUSING_MAPPING = { house: 350.0, apartment: 200.0, shared: 100.0 }
@@ -183,6 +183,44 @@ export default function Onboarding({ onComplete }) {
     utility: false,
   })
 
+  const [lifestyleText, setLifestyleText] = useState('')
+  const [parsing, setParsing] = useState(false)
+  const [parseError, setParseError] = useState(null)
+  const [showParseNotice, setShowParseNotice] = useState(false)
+
+  async function handleNextStep1() {
+    if (lifestyleText.trim().length >= 10) {
+      setParsing(true)
+      setParseError(null)
+      setShowParseNotice(false)
+      try {
+        const result = await parseOnboarding(lifestyleText.trim())
+        if (!result || result.confidence === 'none') {
+          setShowParseNotice(true)
+        } else {
+          if (result.diet !== null) {
+            setDiet(result.diet === 'flexitarian' ? 'mixed' : result.diet)
+          }
+          if (result.commute !== null) {
+            setCommute(result.commute)
+          }
+          if (result.housing !== null) {
+            setHousing(result.housing)
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to parse onboarding description:', err)
+        setParseError(err.message || String(err))
+        setShowParseNotice(true)
+      } finally {
+        setParsing(false)
+        setStep(1)
+      }
+    } else {
+      setStep(1)
+    }
+  }
+
   const gridFactor = useMemo(() => {
     if (!city.trim()) return { gridKwh: 0.82, transportKm: 0.21, avgAnnualKg: 2000 }
     return getGridFactor(city)
@@ -294,15 +332,31 @@ export default function Onboarding({ onComplete }) {
                   placeholder="560001"
                 />
               </div>
+              <div>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label className="text-xs font-medium text-slate-400">
+                    Optional: Describe your lifestyle
+                  </label>
+                  <span className="text-[10px] text-eco-neon">
+                     AI will pre-fill your choices
+                  </span>
+                </div>
+                <textarea
+                  className={`${INPUT_CLASS} h-20 resize-none`}
+                  value={lifestyleText}
+                  onChange={(e) => setLifestyleText(e.target.value)}
+                  placeholder="Optional: describe your lifestyle in your own words... e.g. I drive to work and live alone in an apartment, mostly vegetarian."
+                />
+              </div>
             </div>
             <div className="mt-7 flex justify-end">
               <button
                 type="button"
                 className={PRIMARY_BTN}
-                disabled={!step1Valid}
-                onClick={() => setStep(1)}
+                disabled={!step1Valid || parsing}
+                onClick={handleNextStep1}
               >
-                Next
+                {parsing ? 'Analysing...' : 'Next'}
               </button>
             </div>
           </div>
@@ -312,6 +366,18 @@ export default function Onboarding({ onComplete }) {
         {step === 1 && (
           <div className="mt-6">
             <h2 className="text-xl font-bold text-white">How do you live day to day?</h2>
+            {showParseNotice && (
+              <div className="mt-4 flex items-center justify-between gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">
+                <span>Couldn&apos;t parse your description — please select manually below.</span>
+                <button
+                  type="button"
+                  className="text-amber-400 hover:text-amber-100 font-semibold text-xs transition-colors shrink-0"
+                  onClick={() => setShowParseNotice(false)}
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
             <div className="mt-5 space-y-5">
               <div>
                 <div className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-300">

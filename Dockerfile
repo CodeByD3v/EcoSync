@@ -28,5 +28,5 @@ COPY backend/ ./
 COPY --from=frontend /app/frontend/dist ./static
 
 EXPOSE 8080
-# Use the shell form so $PORT (set by Cloud Run) is expanded at runtime.
-CMD exec uvicorn main:app --host 0.0.0.0 --port ${PORT}
+# Use JSON form with sh -c and exec so $PORT is expanded and signals are forwarded.
+CMD ["sh", "-c", "exec uvicorn main:app --host 0.0.0.0 --port ${PORT}"]

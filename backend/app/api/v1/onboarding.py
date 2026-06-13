@@ -89,4 +89,3 @@ def onboard(payload: OnboardingRequest) -> OnboardingResponse:
         estimated_annual_kg=total,
         message=message,
     )
-

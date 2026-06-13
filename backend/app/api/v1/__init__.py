@@ -2,12 +2,13 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import actions, footprint, insights, onboarding
+from app.api.v1 import actions, footprint, insights, onboarding, parse
 
 api_router = APIRouter()
 api_router.include_router(footprint.router)
 api_router.include_router(insights.router)
 api_router.include_router(actions.router)
 api_router.include_router(onboarding.router)
+api_router.include_router(parse.router)
 
 __all__ = ["api_router"]

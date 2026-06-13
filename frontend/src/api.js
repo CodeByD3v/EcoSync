@@ -32,6 +32,9 @@ export const completeAction = (actionId, completed) =>
 export const submitOnboarding = (payload) =>
   request('/onboard', { method: 'POST', body: JSON.stringify(payload) })
 
+export const parseOnboarding = (message) =>
+  request('/onboard/parse', { method: 'POST', body: JSON.stringify({ message }) })
+
 // New endpoints for calculation, profile settings and community challenges
 export const calculateFootprint = (payload) =>
   request('/footprint/calculate', {
