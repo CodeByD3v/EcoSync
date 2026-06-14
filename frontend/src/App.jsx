@@ -30,7 +30,7 @@ import {
 } from './fallbackData.js'
 import useUserProfile from './hooks/useUserProfile.js'
 import Onboarding from './components/Onboarding.jsx'
-import { getGridFactor } from './lib/gridFactors.js'
+import { getGridFactor, normalizeGridFactor } from './lib/gridFactors.js'
 
 // Local carbon factors fallback if backend is offline
 const LOCAL_EF = {
@@ -73,6 +73,30 @@ function calculateFootprintLocal(inputs, city, profileName) {
   }
 }
 
+function calculatorInputsFromProfile(prof) {
+  return {
+    km_driven_per_week: prof.km_driven_per_week ?? 100,
+    flights_per_year: prof.flights_per_year ?? 2,
+    kwh_per_month: prof.kwh_per_month ?? 200,
+    diet: prof.diet ?? 'mixed',
+    new_items_per_month: prof.new_items_per_month ?? 5,
+  }
+}
+
+function dashboardProfileFromApi(prof, fallback = {}) {
+  const city = prof.city ?? fallback.city ?? 'India'
+  const fallbackGridFactor = fallback.gridFactor ?? getGridFactor(city)
+
+  return {
+    ...fallback,
+    name: prof.name ?? fallback.name ?? 'User',
+    city,
+    zip_code: prof.zip_code ?? fallback.zip_code ?? '560001',
+    gridFactor: normalizeGridFactor(prof.grid_factors, fallbackGridFactor),
+    diet: prof.diet ?? fallback.diet ?? 'mixed',
+  }
+}
+
 function StatusBadge({ total }) {
   const diff = total - 2000 // India Avg is 2000 kg/yr
   if (diff < -400) {
@@ -105,6 +129,7 @@ function StatusBadge({ total }) {
 
 export default function App() {
   const { profile, saveProfile, clearProfile } = useUserProfile()
+  const [serverProfile, setServerProfile] = useState(null)
   const [footprint, setFootprint] = useState(null)
   const [insights, setInsights] = useState([])
   const [actions, setActions] = useState([])
@@ -143,13 +168,8 @@ export default function App() {
         setFootprint(fp)
 
         const prof = await getUserProfile()
-        setCalcInputs({
-          km_driven_per_week: prof.km_driven_per_week ?? 100,
-          flights_per_year: prof.flights_per_year ?? 2,
-          kwh_per_month: prof.kwh_per_month ?? 200,
-          diet: prof.diet ?? 'mixed',
-          new_items_per_month: prof.new_items_per_month ?? 5,
-        })
+        setServerProfile(dashboardProfileFromApi(prof, profile))
+        setCalcInputs(calculatorInputsFromProfile(prof))
 
         const nextInsights = await getInsights()
         setInsights(nextInsights)
@@ -184,13 +204,8 @@ export default function App() {
         setInsights(ins)
         setActions(acts)
         setChallenges(chs)
-        setCalcInputs({
-          km_driven_per_week: prof.km_driven_per_week ?? 100,
-          flights_per_year: prof.flights_per_year ?? 2,
-          kwh_per_month: prof.kwh_per_month ?? 200,
-          diet: prof.diet ?? 'mixed',
-          new_items_per_month: prof.new_items_per_month ?? 5,
-        })
+        setServerProfile(dashboardProfileFromApi(prof, profile))
+        setCalcInputs(calculatorInputsFromProfile(prof))
         setTotalPoints(acts.filter((a) => a.completed).reduce((s, a) => s + a.points, 0))
       } catch {
         if (cancelled) return
@@ -201,6 +216,7 @@ export default function App() {
         setActions(FALLBACK_ACTIONS)
         setChallenges(FALLBACK_CHALLENGES)
         setCalcInputs(FALLBACK_PROFILE)
+        setServerProfile(null)
         setTotalPoints(FALLBACK_ACTIONS.filter((a) => a.completed).reduce((s, a) => s + a.points, 0))
       } finally {
         if (!cancelled) setLoading(false)
@@ -293,13 +309,8 @@ export default function App() {
       setInsights(ins)
       setActions(acts)
       setChallenges(chs)
-      setCalcInputs({
-        km_driven_per_week: prof.km_driven_per_week ?? 100,
-        flights_per_year: prof.flights_per_year ?? 2,
-        kwh_per_month: prof.kwh_per_month ?? 200,
-        diet: prof.diet ?? 'mixed',
-        new_items_per_month: prof.new_items_per_month ?? 5,
-      })
+      setServerProfile(dashboardProfileFromApi(prof, profileData))
+      setCalcInputs(calculatorInputsFromProfile(prof))
       setTotalPoints(acts.filter((a) => a.completed).reduce((s, a) => s + a.points, 0))
       setOffline(false)
     } catch {
@@ -317,6 +328,7 @@ export default function App() {
       setActions(FALLBACK_ACTIONS)
       setChallenges(FALLBACK_CHALLENGES)
       setCalcInputs(calcInit)
+      setServerProfile(null)
       setTotalPoints(FALLBACK_ACTIONS.filter((a) => a.completed).reduce((s, a) => s + a.points, 0))
     } finally {
       setLoading(false)
@@ -337,12 +349,14 @@ export default function App() {
     )
   }
 
+  const benchmarkProfile = serverProfile ?? profile
+
   // Calculate high-fidelity dashboard metrics
-  const localAvg = profile?.gridFactor?.avgAnnualKg || 2000
+  const localAvg = benchmarkProfile?.gridFactor?.avgAnnualKg || 2000
   const diffPct = Math.round(Math.abs(footprint.total_kg - localAvg) / localAvg * 100)
   const isAboveAvg = footprint.total_kg > localAvg
   const cheeseburgerCount = Math.round(footprint.total_kg / 6.6)
-  const regionLabel = localAvg === 4700 ? 'Global' : (profile?.city ? profile.city : 'India')
+  const regionLabel = localAvg === 4700 ? 'Global' : (benchmarkProfile?.city ? benchmarkProfile.city : 'India')
 
 
 
@@ -409,6 +423,7 @@ export default function App() {
             <button
               onClick={() => {
                 clearProfile()
+                setServerProfile(null)
                 setFootprint(null)
                 setInsights([])
                 setActions([])
@@ -421,11 +436,11 @@ export default function App() {
 
             <div className="flex items-center gap-3">
               <div className="h-8 w-8 rounded-full bg-eco-neon/20 border border-eco-neon/40 flex items-center justify-center text-xs font-bold text-eco-neon">
-                {profile.name ? profile.name.charAt(0).toUpperCase() : 'U'}
+                {benchmarkProfile.name ? benchmarkProfile.name.charAt(0).toUpperCase() : 'U'}
               </div>
               <div className="text-left">
-                <p className="text-xs font-bold text-white">{profile.name || 'User'}</p>
-                <p className="text-[10px] text-slate-400">{profile.city || 'Location'}</p>
+                <p className="text-xs font-bold text-white">{benchmarkProfile.name || 'User'}</p>
+                <p className="text-[10px] text-slate-400">{benchmarkProfile.city || 'Location'}</p>
               </div>
             </div>
           </div>
@@ -435,7 +450,7 @@ export default function App() {
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
             {/* Greeting Header */}
-            <Header footprint={footprint} profileName={profile?.name} />
+            <Header footprint={footprint} profileName={benchmarkProfile?.name} />
 
             {/* Peak Demand Advisory */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-xs">
@@ -445,7 +460,7 @@ export default function App() {
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-505 bg-amber-500"></span>
                 </span>
                 <span className="font-bold">⚠️ LIVE GRID ADVISORY:</span>
-                <span className="text-slate-300">Peak hours load on {profile?.city || 'India'} energy grid. Shift heavy appliance usage to earn +15 pts.</span>
+                <span className="text-slate-300">Peak hours load on {benchmarkProfile?.city || 'India'} energy grid. Shift heavy appliance usage to earn +15 pts.</span>
               </div>
               <button 
                 onClick={() => setActiveTab('actions')}
@@ -491,7 +506,7 @@ export default function App() {
             {/* Visualisations Layout */}
             <div className="grid gap-5 md:grid-cols-2">
               <BreakdownChart breakdown={footprint.breakdown} total={`${(footprint.total_kg / 1000).toFixed(1)}t`} unit="CO₂/yr" />
-              <LocalBenchmark userFootprint={footprint.total_kg} zipCode={profile?.zip_code || '560001'} avgAnnualKg={profile?.gridFactor?.avgAnnualKg || 2000} profileName={profile?.name} />
+              <LocalBenchmark userFootprint={footprint.total_kg} zipCode={benchmarkProfile?.zip_code || '560001'} avgAnnualKg={localAvg} profileName={benchmarkProfile?.name} />
 
               <div className="md:col-span-2">
                 {/* FIX 2: Pass annual total_kg so Translation Engine uses same source as header metric cards */}

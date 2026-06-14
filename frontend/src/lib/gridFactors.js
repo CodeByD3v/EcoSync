@@ -18,6 +18,16 @@ const GLOBAL_FALLBACK = { gridKwh: 0.49, transportKm: 0.17, avgAnnualKg: 4700 }
 
 const INDIA_KEYS = ['india', 'bharat']
 
+export function normalizeGridFactor(factors, fallback = INDIA_FALLBACK) {
+  if (!factors) return fallback
+
+  return {
+    gridKwh: Number(factors.gridKwh ?? factors.grid_kwh ?? fallback.gridKwh),
+    transportKm: Number(factors.transportKm ?? factors.transport_km ?? fallback.transportKm),
+    avgAnnualKg: Number(factors.avgAnnualKg ?? factors.avg_annual_kg ?? fallback.avgAnnualKg),
+  }
+}
+
 export function getGridFactor(city) {
   let baseFactor = GLOBAL_FALLBACK
   if (city) {

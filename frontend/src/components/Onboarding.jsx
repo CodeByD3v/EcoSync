@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Car, CreditCard, Home, Leaf, MapPin, Salad, Zap } from 'lucide-react'
-import { getGridFactor } from '../lib/gridFactors.js'
+import { getGridFactor, normalizeGridFactor } from '../lib/gridFactors.js'
 import { submitOnboarding, parseOnboarding } from '../api.js'
 
 const COMMUTE_MAPPING = { drive: 200.0, two_wheeler: 120.0, transit: 50.0, walk: 0.0 }
@@ -306,9 +306,10 @@ export default function Onboarding({ onComplete }) {
       housing,
       permissions: finalPermissions,
     }
+    let completedProfile = profile
 
     try {
-      await submitOnboarding({
+      const result = await submitOnboarding({
         name: profile.name,
         city: profile.city,
         zip_code: profile.zip_code,
@@ -317,11 +318,17 @@ export default function Onboarding({ onComplete }) {
         housing: profile.housing,
         permissions: profile.permissions,
       })
+      completedProfile = {
+        ...profile,
+        city: result.city ?? profile.city,
+        zip_code: result.zip_code ?? profile.zip_code,
+        gridFactor: normalizeGridFactor(result.grid_factors, profile.gridFactor),
+      }
     } catch (err) {
       console.warn("Backend onboarding failed or offline, proceeding offline:", err)
     }
 
-    onComplete(profile)
+    onComplete(completedProfile)
   }
 
   return (

@@ -161,8 +161,9 @@ class FootprintService:
                 d.pop("id", None)
                 if "zip_code" not in d or not d["zip_code"]:
                     d["zip_code"] = "560001" if d.get("city", "").lower() == "bengaluru" else "400001"
+                d["grid_factors"] = lookup_grid_factor(d.get("city", ""))
                 return d
-            return {
+            default_profile = {
                 "name": "Arjun",
                 "city": "Bengaluru",
                 "zip_code": "560001",
@@ -172,6 +173,8 @@ class FootprintService:
                 "diet": "mixed",
                 "new_items_per_month": 5,
             }
+            default_profile["grid_factors"] = lookup_grid_factor(default_profile["city"])
+            return default_profile
 
     def update_profile(self, data: dict) -> None:
         """Update profile parameters in SQLite."""

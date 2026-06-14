@@ -4,7 +4,7 @@ import Card from './Card.jsx'
 export default function LocalBenchmark({ userFootprint, zipCode, avgAnnualKg, profileName }) {
   const userVal = userFootprint // e.g. 3100 kg
   const zipAvg = avgAnnualKg // e.g. 2000 kg
-  const greenTarget = Math.round(zipAvg * 0.45) // Top 10% target
+  const greenTarget = Math.round(zipAvg * 0.55) // 45% below local average
 
   const maxVal = Math.max(userVal, zipAvg, greenTarget) * 1.15
 
