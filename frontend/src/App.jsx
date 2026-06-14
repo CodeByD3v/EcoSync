@@ -5,7 +5,6 @@ import BreakdownChart from './components/BreakdownChart.jsx'
 import InsightsPanel from './components/InsightsPanel.jsx'
 import ActionsChecklist from './components/ActionsChecklist.jsx'
 import CalculatorPanel from './components/CalculatorPanel.jsx'
-import ChallengesPanel from './components/ChallengesPanel.jsx'
 import Card from './components/Card.jsx'
 import IngestionPanel from './components/IngestionPanel.jsx'
 import TranslationEngine from './components/TranslationEngine.jsx'
@@ -345,11 +344,7 @@ export default function App() {
   const cheeseburgerCount = Math.round(footprint.total_kg / 6.6)
   const regionLabel = localAvg === 4700 ? 'Global' : (profile?.city ? profile.city : 'India')
 
-  // FIX 1: Use real challenge progress from DB — these are community participation
-  // counts, NOT invented streak days. Label them accurately.
-  const meatlessProgress = challenges.find(c => c.id === 'meatless-monday-streak')?.progress ?? 0
-  const transitProgress = challenges.find(c => c.id === 'zero-drive-week')?.progress ?? 0
-  const energyProgress = challenges.find(c => c.id === 'solar-switch-collective')?.progress ?? 0
+
 
   // Count completed actions per category to show something meaningful from day 1
   const completedDietActions = actions.filter(a =>
@@ -547,7 +542,7 @@ export default function App() {
                   <div className="flex items-center justify-between p-3.5 bg-slatebg/40 border border-panelborder rounded-xl">
                     <div className="flex flex-col gap-0.5">
                       <span className="text-xs font-semibold text-slate-300">🥗 Plant-Based Meals</span>
-                      <span className="text-[10px] text-slate-500">Meatless Monday challenge ({meatlessProgress}/{100} community actions)</span>
+                      <span className="text-[10px] text-slate-500">Habits to reduce dietary carbon footprint</span>
                     </div>
                     <span className={`text-xs font-extrabold shrink-0 ${completedDietActions > 0 ? 'text-eco-neon' : 'text-slate-500'}`}>
                       {completedDietActions > 0 ? `${completedDietActions} done ✓` : 'Not started'}
@@ -557,7 +552,7 @@ export default function App() {
                   <div className="flex items-center justify-between p-3.5 bg-slatebg/40 border border-panelborder rounded-xl">
                     <div className="flex flex-col gap-0.5">
                       <span className="text-xs font-semibold text-slate-300">🚌 Low-Emission Commute</span>
-                      <span className="text-[10px] text-slate-500">Zero-drive week challenge ({transitProgress}/{100} community actions)</span>
+                      <span className="text-[10px] text-slate-500">Habits to lower transportation emissions</span>
                     </div>
                     <span className={`text-xs font-extrabold shrink-0 ${completedTransitActions > 0 ? 'text-eco-neon' : 'text-slate-500'}`}>
                       {completedTransitActions > 0 ? `${completedTransitActions} done ✓` : 'Not started'}
@@ -567,7 +562,7 @@ export default function App() {
                   <div className="flex items-center justify-between p-3.5 bg-slatebg/40 border border-panelborder rounded-xl">
                     <div className="flex flex-col gap-0.5">
                       <span className="text-xs font-semibold text-slate-300">⚡ Energy-Saving Actions</span>
-                      <span className="text-[10px] text-slate-500">Solar switch challenge ({energyProgress}/{100} community actions)</span>
+                      <span className="text-[10px] text-slate-500">Habits to cut household electricity use</span>
                     </div>
                     <span className={`text-xs font-extrabold shrink-0 ${completedEnergyActions > 0 ? 'text-eco-neon' : 'text-slate-500'}`}>
                       {completedEnergyActions > 0 ? `${completedEnergyActions} done ✓` : 'Not started'}
@@ -597,9 +592,6 @@ export default function App() {
           <div className="grid gap-5 md:grid-cols-2">
             <div className="md:col-span-2">
               <ActionsChecklist actions={actions} totalPoints={totalPoints} onToggle={handleToggle} pending={pending} />
-            </div>
-            <div className="md:col-span-2">
-              <ChallengesPanel challenges={challenges} />
             </div>
           </div>
         )}

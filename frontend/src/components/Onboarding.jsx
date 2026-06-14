@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Car, CreditCard, Home, Leaf, Lock, MapPin, Salad, Zap } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Car, CreditCard, Home, Leaf, MapPin, Salad, Zap } from 'lucide-react'
 import { getGridFactor } from '../lib/gridFactors.js'
 import { submitOnboarding, parseOnboarding } from '../api.js'
 
@@ -188,6 +188,66 @@ export default function Onboarding({ onComplete }) {
   const [parseError, setParseError] = useState(null)
   const [showParseNotice, setShowParseNotice] = useState(false)
 
+  const [pincodeStatus, setPincodeStatus] = useState('idle') // 'idle' | 'loading' | 'valid' | 'invalid'
+  const [pincodeError, setPincodeError] = useState(null)
+  const [verifiedLocation, setVerifiedLocation] = useState(null)
+
+  useEffect(() => {
+    const code = zipCode.trim()
+    if (!/^[1-9][0-9]{5}$/.test(code)) {
+      setPincodeStatus('idle')
+      setPincodeError(code.length > 0 ? 'PIN code must be exactly 6 digits.' : null)
+      setVerifiedLocation(null)
+      return
+    }
+
+    let active = true
+    setPincodeStatus('loading')
+    setPincodeError(null)
+
+    const controller = new AbortController()
+
+    async function validatePincode() {
+      try {
+        const response = await fetch(`https://api.postalpincode.in/pincode/${code}`, {
+          signal: controller.signal
+        })
+        const data = await response.json()
+
+        if (!active) return
+
+        if (data && data[0] && data[0].Status === 'Success' && data[0].PostOffice && data[0].PostOffice.length > 0) {
+          const mainOffice = data[0].PostOffice[0]
+          const district = mainOffice.District
+          const state = mainOffice.State
+          setVerifiedLocation(`${district}, ${state}`)
+          setPincodeStatus('valid')
+          setPincodeError(null)
+          setCity(district)
+        } else {
+          setPincodeStatus('invalid')
+          setPincodeError('Invalid PIN code. No records found for India Post.')
+          setVerifiedLocation(null)
+        }
+      } catch (err) {
+        if (!active) return
+        if (err.name === 'AbortError') return
+        console.warn('Real-time PIN code verification failed or offline:', err)
+        // Fallback to basic 6-digit validation if offline/error
+        setPincodeStatus('valid')
+        setPincodeError(null)
+        setVerifiedLocation('Verified format (offline)')
+      }
+    }
+
+    validatePincode()
+
+    return () => {
+      active = false
+      controller.abort()
+    }
+  }, [zipCode])
+
   async function handleNextStep1() {
     if (lifestyleText.trim().length >= 10) {
       setParsing(true)
@@ -232,7 +292,7 @@ export default function Onboarding({ onComplete }) {
     return estimateFootprint(gridFactor, { diet, commute, housing })
   }, [gridFactor, diet, commute, housing, city])
 
-  const step1Valid = name.trim() !== '' && city.trim() !== '' && zipCode.trim() !== ''
+  const step1Valid = name.trim() !== '' && city.trim() !== '' && pincodeStatus === 'valid'
   const step2Valid = diet !== null && commute !== null && housing !== null
 
   async function finish(finalPermissions) {
@@ -326,11 +386,38 @@ export default function Onboarding({ onComplete }) {
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-slate-400">Zip / Postal Code</label>
                 <input
-                  className={INPUT_CLASS}
+                  className={`${INPUT_CLASS} ${
+                    pincodeStatus === 'valid'
+                      ? 'border-emerald-500/50 focus:border-emerald-500'
+                      : pincodeStatus === 'invalid'
+                      ? 'border-rose-500/50 focus:border-rose-500'
+                      : ''
+                  }`}
                   value={zipCode}
-                  onChange={(e) => setZipCode(e.target.value)}
+                  onChange={(e) => setZipCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="560001"
                 />
+                {pincodeStatus === 'loading' && (
+                  <p className="mt-2 text-xs text-amber-400 flex items-center gap-1.5 animate-pulse">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-ping" />
+                    Checking postal records for {zipCode}...
+                  </p>
+                )}
+                {pincodeStatus === 'valid' && (
+                  <p className="mt-2 text-xs text-emerald-400 font-medium flex items-center gap-1">
+                    ✓ Verified Location: {verifiedLocation}
+                  </p>
+                )}
+                {pincodeStatus === 'invalid' && (
+                  <p className="mt-2 text-xs text-rose-400 font-medium">
+                    ❌ {pincodeError}
+                  </p>
+                )}
+                {pincodeStatus === 'idle' && pincodeError && (
+                  <p className="mt-2 text-xs text-slate-500">
+                    ℹ️ {pincodeError}
+                  </p>
+                )}
               </div>
               <div>
                 <div className="mb-1.5 flex items-center justify-between">
@@ -468,10 +555,7 @@ export default function Onboarding({ onComplete }) {
                 />
               ))}
             </div>
-            <div className="mt-4 flex items-center gap-2 rounded-xl border border-panelborder px-3 py-2 text-xs text-slate-400">
-              <Lock size={14} className="shrink-0 text-eco-neon" />
-              Encrypted at rest · Isolated cryptographic keys · Routines never leave your profile
-            </div>
+
             <div className="mt-7 flex items-center justify-between">
               <button
                 type="button"

@@ -23,6 +23,10 @@ ALLOWED_DIET = {"meat_heavy", "mixed", "flexitarian", "vegetarian", "vegan"}
 def onboard(payload: OnboardingRequest) -> OnboardingResponse:
     """Estimate user footprint and save profile preferences to SQLite."""
 
+    import re
+    if not re.match(r"^[1-9][0-9]{5}$", payload.zip_code):
+        raise HTTPException(status_code=422, detail="Invalid Indian PIN code. Must be exactly 6 digits starting with 1-9.")
+
     if payload.commute not in ALLOWED_COMMUTE:
         raise HTTPException(status_code=422, detail=f"Unknown commute: {payload.commute}")
     if payload.housing not in ALLOWED_HOUSING:
