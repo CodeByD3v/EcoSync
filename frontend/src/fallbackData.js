@@ -70,7 +70,7 @@ export const FALLBACK_PROFILE = {
 }
 
 export const FALLBACK_CHALLENGES = [
-  { id: 'meatless-monday-streak', name: 'Meatless Monday streak', members: 142, progress: 68, goal: 100 },
-  { id: 'zero-drive-week', name: 'Zero-drive week', members: 89, progress: 42, goal: 100 },
-  { id: 'solar-switch-collective', name: 'Solar switch collective', members: 234, progress: 81, goal: 100 },
+  { id: 'meatless-monday-streak', name: 'Meatless Monday streak', members: 142, progress: 0, goal: 100 },
+  { id: 'zero-drive-week', name: 'Zero-drive week', members: 89, progress: 0, goal: 100 },
+  { id: 'solar-switch-collective', name: 'Solar switch collective', members: 234, progress: 0, goal: 100 },
 ]

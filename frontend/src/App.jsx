@@ -345,10 +345,22 @@ export default function App() {
   const cheeseburgerCount = Math.round(footprint.total_kg / 6.6)
   const regionLabel = localAvg === 4700 ? 'Global' : (profile?.city ? profile.city : 'India')
 
-  // Dynamic streaks derived from SQLite challenge progress
-  const transitStreak = challenges.find(c => c.id === 'zero-drive-week')?.progress ?? 4
-  const zeroEmissionStreak = challenges.find(c => c.id === 'solar-switch-collective')?.progress ?? 2
-  const dietStreak = challenges.find(c => c.id === 'meatless-monday-streak')?.progress ?? 5
+  // FIX 1: Use real challenge progress from DB — these are community participation
+  // counts, NOT invented streak days. Label them accurately.
+  const meatlessProgress = challenges.find(c => c.id === 'meatless-monday-streak')?.progress ?? 0
+  const transitProgress = challenges.find(c => c.id === 'zero-drive-week')?.progress ?? 0
+  const energyProgress = challenges.find(c => c.id === 'solar-switch-collective')?.progress ?? 0
+
+  // Count completed actions per category to show something meaningful from day 1
+  const completedDietActions = actions.filter(a =>
+    (a.id === 'plant-lunch' || a.id === 'meatless-monday') && a.completed
+  ).length
+  const completedTransitActions = actions.filter(a =>
+    (a.id === 'public-transit' || a.id === 'walk-trips') && a.completed
+  ).length
+  const completedEnergyActions = actions.filter(a =>
+    (a.id === 'unplug-devices' || a.id === 'set-ac-26' || a.id === 'cold-wash') && a.completed
+  ).length
 
   return (
     <div className="min-h-screen bg-slatebg text-slate-200">
@@ -438,7 +450,7 @@ export default function App() {
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-505 bg-amber-500"></span>
                 </span>
                 <span className="font-bold">⚠️ LIVE GRID ADVISORY:</span>
-                <span className="text-slate-300">Peak hours load on Bengaluru energy grid. Shift heavy appliance usage to earn +15 pts.</span>
+                <span className="text-slate-300">Peak hours load on {profile?.city || 'India'} energy grid. Shift heavy appliance usage to earn +15 pts.</span>
               </div>
               <button 
                 onClick={() => setActiveTab('actions')}
@@ -472,11 +484,12 @@ export default function App() {
 
               <div className="bg-panel border border-panelborder rounded-2xl p-5 flex flex-col justify-between">
                 <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Cheeseburger Index</span>
+                {/* FIX 2: Annual total / 6.6 — consistent with Translation Engine */}
                 <span className="text-3xl font-extrabold text-indigo-400 mt-2">
                   {cheeseburgerCount.toLocaleString()}{' '}
-                  <span className="text-lg font-medium text-slate-500">burgers</span>
+                  <span className="text-lg font-medium text-slate-500">burgers/yr</span>
                 </span>
-                <span className="text-xs text-slate-400 mt-1">equivalent emissions footprint</span>
+                <span className="text-xs text-slate-400 mt-1">annual emissions equivalent (1 burger = 6.6 kg CO₂e)</span>
               </div>
             </div>
 
@@ -486,11 +499,12 @@ export default function App() {
               <LocalBenchmark userFootprint={footprint.total_kg} zipCode={profile?.zip_code || '560001'} avgAnnualKg={profile?.gridFactor?.avgAnnualKg || 2000} profileName={profile?.name} />
 
               <div className="md:col-span-2">
-                <TranslationEngine dailyValue={Math.round((footprint.total_kg / 365.0) * 10) / 10} />
+                {/* FIX 2: Pass annual total_kg so Translation Engine uses same source as header metric cards */}
+                <TranslationEngine annualKg={footprint.total_kg} />
               </div>
 
-              {/* 6-Month Trend */}
-              <Card title="6-Month History" subtitle="Your monthly emissions trajectory." icon={Leaf} action={<StatusBadge total={footprint.total_kg} />}>
+              {/* FIX 4: 6-Month History with honest projection label */}
+              <Card title="6-Month History" subtitle="Monthly emissions trajectory — baseline projection, updates as you act." icon={Trophy} action={<StatusBadge total={footprint.total_kg} />}>
                 <div className="h-44 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={footprint.trend} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
@@ -520,23 +534,48 @@ export default function App() {
                     <span key={t.label}>{t.label}</span>
                   ))}
                 </div>
+                {/* FIX 4: Honest projection disclaimer */}
+                <p className="mt-2 text-[10px] text-slate-600 italic text-center">
+                  Baseline projection from your lifestyle inputs — June reflects today's calculation. Earlier months are regional trend estimates.
+                </p>
               </Card>
 
-              {/* Active Habit Streaks Card */}
-              <Card title="Active Habit Streaks" subtitle="Consistent positive daily actions." icon={Trophy}>
+              {/* FIX 1: Active Habit Progress — real data, honest labels */}
+              <Card title="Today's Habit Progress" subtitle="Actions completed this session — complete habits in the Actions tab." icon={Trophy}>
                 <div className="space-y-3 py-1">
+                  {/* Diet habits */}
                   <div className="flex items-center justify-between p-3.5 bg-slatebg/40 border border-panelborder rounded-xl">
-                    <span className="text-xs font-semibold text-slate-300">🔥 Public Transit Streak</span>
-                    <span className="text-xs font-extrabold text-eco-lime">{transitStreak} consecutive days</span>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-xs font-semibold text-slate-300">🥗 Plant-Based Meals</span>
+                      <span className="text-[10px] text-slate-500">Meatless Monday challenge ({meatlessProgress}/{100} community actions)</span>
+                    </div>
+                    <span className={`text-xs font-extrabold shrink-0 ${completedDietActions > 0 ? 'text-eco-neon' : 'text-slate-500'}`}>
+                      {completedDietActions > 0 ? `${completedDietActions} done ✓` : 'Not started'}
+                    </span>
                   </div>
+                  {/* Transit habits */}
                   <div className="flex items-center justify-between p-3.5 bg-slatebg/40 border border-panelborder rounded-xl">
-                    <span className="text-xs font-semibold text-slate-300">🔥 Zero-Emission Commute</span>
-                    <span className="text-xs font-extrabold text-eco-lime">{zeroEmissionStreak} consecutive days</span>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-xs font-semibold text-slate-300">🚌 Low-Emission Commute</span>
+                      <span className="text-[10px] text-slate-500">Zero-drive week challenge ({transitProgress}/{100} community actions)</span>
+                    </div>
+                    <span className={`text-xs font-extrabold shrink-0 ${completedTransitActions > 0 ? 'text-eco-neon' : 'text-slate-500'}`}>
+                      {completedTransitActions > 0 ? `${completedTransitActions} done ✓` : 'Not started'}
+                    </span>
                   </div>
+                  {/* Energy habits */}
                   <div className="flex items-center justify-between p-3.5 bg-slatebg/40 border border-panelborder rounded-xl">
-                    <span className="text-xs font-semibold text-slate-300">🔥 Plant-Based Lunches</span>
-                    <span className="text-xs font-extrabold text-eco-lime">{dietStreak} consecutive days</span>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-xs font-semibold text-slate-300">⚡ Energy-Saving Actions</span>
+                      <span className="text-[10px] text-slate-500">Solar switch challenge ({energyProgress}/{100} community actions)</span>
+                    </div>
+                    <span className={`text-xs font-extrabold shrink-0 ${completedEnergyActions > 0 ? 'text-eco-neon' : 'text-slate-500'}`}>
+                      {completedEnergyActions > 0 ? `${completedEnergyActions} done ✓` : 'Not started'}
+                    </span>
                   </div>
+                  <p className="text-[10px] text-slate-600 italic text-center pt-1">
+                    Complete actions in the Actions Plan tab to update these.
+                  </p>
                 </div>
               </Card>
 

@@ -24,6 +24,14 @@ def _get_fallback_insights() -> List[Insight]:
             impact_kg=-0.8,
         ),
         Insight(
+            id="peak-hours-fallback",
+            type="alert",
+            icon="Zap",
+            title="Peak Hours Alert",
+            description="Unplug idle devices now to avoid high-carbon grid power.",
+            impact_kg=-0.5,
+        ),
+        Insight(
             id="swap-beef-fallback",
             type="swap",
             icon="Salad",

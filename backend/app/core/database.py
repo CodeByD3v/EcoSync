@@ -126,9 +126,9 @@ def init_db() -> None:
         cursor.execute("SELECT COUNT(*) as cnt FROM challenges")
         if cursor.fetchone()["cnt"] == 0:
             default_challenges = [
-                ("meatless-monday-streak", "Meatless Monday streak", 142, 68, 100),
-                ("zero-drive-week", "Zero-drive week", 89, 42, 100),
-                ("solar-switch-collective", "Solar switch collective", 234, 81, 100)
+                ("meatless-monday-streak", "Meatless Monday streak", 142, 0, 100),
+                ("zero-drive-week", "Zero-drive week", 89, 0, 100),
+                ("solar-switch-collective", "Solar switch collective", 234, 0, 100)
             ]
             cursor.executemany(
                 "INSERT INTO challenges (id, name, members, progress, goal) VALUES (?, ?, ?, ?, ?)",

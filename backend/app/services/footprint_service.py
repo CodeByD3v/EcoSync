@@ -206,15 +206,17 @@ class FootprintService:
                 cursor.execute(
                     """
                     INSERT INTO profile (name, city, zip_code, km_driven_per_week, flights_per_year, kwh_per_month, diet, new_items_per_month)
-                    VALUES ('Arjun', 'Bengaluru', ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
+                        data.get("name", "User"),
+                        data.get("city", "India"),
                         data.get("zip_code", "560001"),
-                        data["km_driven_per_week"],
-                        data["flights_per_year"],
-                        data["kwh_per_month"],
-                        data["diet"],
-                        data["new_items_per_month"],
+                        data.get("km_driven_per_week", 100.0),
+                        data.get("flights_per_year", 2),
+                        data.get("kwh_per_month", 200.0),
+                        data.get("diet", "mixed"),
+                        data.get("new_items_per_month", 5),
                     ),
                 )
 
@@ -353,15 +355,17 @@ class FootprintService:
             ),
         ]
 
-        # In this amalgamated model, total_kg is annual CO2 in kg (e.g. 3100)
-        # We set yesterday_kg to show trend comparisons
-        yesterday_annual = total_annual + 120.0  # mock trend
+        # Compare against previous month's value for a real delta
+        prev_month_kg = None
+        if len(trend) >= 2:
+            prev_month_kg = trend[-2].value * 12  # annualize the monthly figure
+        yesterday_annual = prev_month_kg if prev_month_kg is not None else total_annual
 
         return DailyFootprint(
             user_name=p.get("name", "Arjun"),
             date=date.today().isoformat(),
             total_kg=total_annual,
-            yesterday_kg=yesterday_annual,
+            yesterday_kg=round(yesterday_annual, 1),
             delta_kg=round(total_annual - yesterday_annual, 1),
             unit="kg CO2e",
             breakdown=breakdown,

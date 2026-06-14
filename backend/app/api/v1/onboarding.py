@@ -16,7 +16,7 @@ router = APIRouter(prefix="/onboard", tags=["onboarding"])
 
 ALLOWED_COMMUTE = {"drive", "transit", "two_wheeler", "walk"}
 ALLOWED_HOUSING = {"house", "apartment", "shared"}
-ALLOWED_DIET = {"meat_heavy", "flexitarian", "vegetarian", "vegan"}
+ALLOWED_DIET = {"meat_heavy", "mixed", "flexitarian", "vegetarian", "vegan"}
 
 
 @router.post("", response_model=OnboardingResponse)
@@ -71,6 +71,7 @@ def onboard(payload: OnboardingRequest) -> OnboardingResponse:
             )
             # Reset all checklist items to incomplete for a new onboarding
             cursor.execute("UPDATE actions SET completed = 0")
+            cursor.execute("UPDATE challenges SET progress = 0")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 

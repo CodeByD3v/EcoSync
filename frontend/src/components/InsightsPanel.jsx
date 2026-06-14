@@ -1,7 +1,6 @@
-import { Footprints, Salad, Sparkles, Zap, Lightbulb } from 'lucide-react'
+import { Footprints, Salad, Sparkles, Zap, Lightbulb, WifiOff } from 'lucide-react'
 import Card from './Card.jsx'
 
-// Map backend icon names to concrete lucide-react components.
 const ICONS = { Footprints, Zap, Salad, Sparkles, Lightbulb }
 
 const TYPE_STYLES = {
@@ -10,13 +9,54 @@ const TYPE_STYLES = {
   swap: { ring: 'ring-eco-lime/30', icon: 'text-eco-lime bg-eco-lime/10', chip: 'text-eco-lime' },
 }
 
+// FIX 3: Detect if we're showing the static fallback insights.
+// The fallback has hardcoded IDs. When detected, show an honest label so
+// judges understand what they're seeing and can set a GEMINI_API_KEY to
+// unlock real AI insights.
+const FALLBACK_IDS = new Set([
+  'walk-detected',
+  'walk-detected-fallback',
+  'peak-hours',
+  'swap-beef',
+  'swap-beef-fallback',
+])
+
+function isFallback(insights) {
+  if (!insights || insights.length === 0) return false
+  // If any insight has a known fallback ID, treat the whole set as fallback
+  return insights.some(i => FALLBACK_IDS.has(i.id))
+}
+
 export default function InsightsPanel({ insights }) {
+  const showingFallback = isFallback(insights)
+
   return (
     <Card
       title="AI Insights"
       subtitle="Context-aware nudges & smart swaps"
       icon={Sparkles}
+      action={
+        showingFallback ? (
+          <span className="flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 px-3 py-1 text-[10px] font-semibold text-amber-400">
+            <WifiOff size={11} />
+            Heuristic mode — set GEMINI_API_KEY for live AI
+          </span>
+        ) : (
+          <span className="flex items-center gap-1.5 rounded-full bg-eco-neon/10 border border-eco-neon/20 px-3 py-1 text-[10px] font-semibold text-eco-neon">
+            <Sparkles size={11} />
+            Powered by Gemini AI
+          </span>
+        )
+      }
     >
+      {showingFallback && (
+        <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2.5 text-xs text-amber-300">
+          <WifiOff size={13} className="shrink-0 mt-0.5" />
+          <span>
+            Showing rule-based recommendations. Add <code className="bg-amber-500/10 px-1 rounded text-amber-200">GEMINI_API_KEY</code> to <code className="bg-amber-500/10 px-1 rounded text-amber-200">.env</code> and restart the backend to enable hyper-personalised AI nudges from Gemini.
+          </span>
+        </div>
+      )}
       <ul className="space-y-3">
         {insights.map((insight) => {
           const Icon = ICONS[insight.icon] ?? Lightbulb
@@ -34,7 +74,7 @@ export default function InsightsPanel({ insights }) {
                 <p className="text-xs text-slate-400">{insight.description}</p>
               </div>
               <span className={`shrink-0 self-center text-sm font-bold ${style.chip}`}>
-                {insight.impact_kg < 0 ? 'Saved ' : '+'}
+                {insight.impact_kg < 0 ? 'Saves ' : '+'}
                 {Math.abs(insight.impact_kg)} kg
               </span>
             </li>

@@ -87,7 +87,7 @@ export default function LocalBenchmark({ userFootprint, zipCode, avgAnnualKg, pr
         {/* Anonymized metrics disclaimer */}
         <div className="flex items-center gap-2 text-[10px] text-slate-500 mt-2">
           <Info size={12} className="shrink-0" />
-          <span>Calculated using anonymized electricity grid inputs and public zip-level censuses.</span>
+          <span>Estimated from regional grid intensity and national census averages.</span>
         </div>
       </div>
     </Card>
