@@ -277,9 +277,9 @@ EcoSync is designed to compile the frontend and backend into a single container 
 EcoSync stands out in the **Prompt Wars Challenge** because it pairs advanced behavioral psychology with a robust technical foundation:
 
 * **Progressive Onboarding:** Instead of bombarding the user with complex questionnaires on sign-up, the conversational AI coach extracts lifestyle vectors gently. By the time the user enters the app, their customized baseline is already calculated.
-* **The Guilt-Free UX:** Most green apps trigger "climate guilt". EcoSync uses gamification, community streaks, and positive reinforcement to build habit loops.
-* **Privacy-First Telemetry:** The application demonstrates a secure consent model where users authorize device-level sensors (Google Fit API) and read-only financial tokens (Plaid) under strict local processing rules.
-* **Transparent Science:** Unlike black-box carbon estimators, EcoSync links regional variables directly to international standards (IPCC/EPA) and local grid configurations (India Central Electricity Authority), giving users maximum confidence in their tracking.
+* **The Guilt-Free UX:** Most green apps trigger "climate guilt". EcoSync uses gamification, individual challenges, and positive reinforcement to build habit loops. *(Note: Community features and cross-user streaks are planned for future releases).*
+* **Privacy-First Telemetry Concept:** The application visually demonstrates a secure consent model concept. While the MVP utilizes simulated data instead of real OAuth credentials, it illustrates how users would authorize device-level sensors (Google Fit API) and read-only financial tokens (Plaid) under strict local processing rules in a production environment.
+* **Transparent Science:** Unlike black-box carbon estimators, EcoSync links regional variables directly to international standards (IPCC/EPA) and local grid configurations (India Central Electricity Authority), with citations integrated directly into the user interface so you always know where your numbers come from.
 
 ---
 

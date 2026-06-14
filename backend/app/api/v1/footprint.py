@@ -27,7 +27,7 @@ def calculate_footprint(
 ) -> DailyFootprint:
     """Update user profile parameters in database and return recalculated footprint."""
     # 1. Update SQLite with new lifestyle slider positions
-    service.update_profile(payload.model_dump())
+    service.update_profile(payload.model_dump(mode='json'))
     # 2. Return recalculated profile state
     return service.get_daily()
 

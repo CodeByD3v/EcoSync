@@ -39,33 +39,99 @@ _INDIA_FALLBACK = GridFactors(grid_kwh=0.82, transport_km=0.21, avg_annual_kg=20
 _GLOBAL_FALLBACK = GridFactors(grid_kwh=0.49, transport_km=0.17, avg_annual_kg=4700)
 
 
-def lookup_grid_factor(city: str) -> GridFactors:
+import json
+import logging
+from datetime import datetime
+from functools import lru_cache
+import google.generativeai as genai
+from app.core.config import get_settings
+
+logger = logging.getLogger(__name__)
+_genai_configured = False
+
+def _static_lookup(city: str) -> GridFactors:
     factors = _INDIA_FALLBACK
     if not city:
-        factors = _GLOBAL_FALLBACK
-    else:
-        needle = city.strip().lower()
-        if not needle:
-            factors = _GLOBAL_FALLBACK
-        else:
-            found = False
-            for keys, f in _REGIONS:
-                if any(key in needle for key in keys):
-                    factors = f
-                    found = True
-                    break
-            if not found:
-                if any(k in needle for k in ["india", "bharat"]):
-                    factors = _INDIA_FALLBACK
-                else:
-                    factors = _GLOBAL_FALLBACK
+        return _GLOBAL_FALLBACK
+    needle = city.strip().lower()
+    if not needle:
+        return _GLOBAL_FALLBACK
+    for keys, f in _REGIONS:
+        if any(key in needle for key in keys):
+            return f
+    if any(k in needle for k in ["india", "bharat"]):
+        return _INDIA_FALLBACK
+    return _GLOBAL_FALLBACK
 
-    # Dynamically inject live carbon intensity based on time of day / Electricity Maps API
+@lru_cache(maxsize=128)
+def _fetch_city_factors_from_gemini(city: str, current_hour: int) -> GridFactors:
+    global _genai_configured
+    settings = get_settings()
+    api_key = settings.gemini_api_key
+
+    if not api_key or not city:
+        return _static_lookup(city)
+
+    if not _genai_configured:
+        genai.configure(api_key=api_key)
+        _genai_configured = True
+
+    prompt = f"""
+    You are an environmental data API. Provide the estimated carbon footprint data for the city of "{city}".
+    It is currently hour {current_hour} (24-hour format). Consider peak/off-peak solar and fossil load for this time.
+    We need:
+    1. The CURRENT real-time grid emission factor in kg CO2e per kWh (adjust for time of day).
+    2. The average transport emission factor for a petrol car in kg CO2e per km.
+    3. The average annual carbon footprint per capita in kg CO2e.
+
+    Output EXACTLY a valid JSON object with these exact keys:
+    - "grid_kwh"
+    - "transport_km"
+    - "avg_annual_kg"
+    
+    Example:
+    {{"grid_kwh": 0.82, "transport_km": 0.21, "avg_annual_kg": 2000}}
+    """
+    try:
+        model = genai.GenerativeModel(settings.llm_model or "gemini-1.5-flash")
+        response = model.generate_content(prompt)
+        
+        raw_text = response.text.strip()
+        if raw_text.startswith("```json"):
+            raw_text = raw_text[7:-3].strip()
+        elif raw_text.startswith("```"):
+            raw_text = raw_text[3:-3].strip()
+            
+        data = json.loads(raw_text)
+        
+        return GridFactors(
+            grid_kwh=float(data.get("grid_kwh", 0.82)),
+            transport_km=float(data.get("transport_km", 0.21)),
+            avg_annual_kg=int(data.get("avg_annual_kg", 2000))
+        )
+    except Exception as e:
+        logger.error(f"Failed to fetch city factors from Gemini for {city}: {e}")
+        return _static_lookup(city)
+
+def lookup_grid_factor(city: str) -> GridFactors:
+    current_hour = datetime.now().hour
+    factors = _fetch_city_factors_from_gemini(city, current_hour)
+
+    # Check if Electricity Maps API is available and override the grid_kwh if so
     from app.services.grid_intensity_service import get_grid_intensity_service
     realtime_kwh = get_grid_intensity_service().get_realtime_intensity(city)
+    
+    # The grid_intensity_service falls back to heuristics, but we prefer Gemini's dynamic estimate 
+    # over the simple static heuristic if Electricity Maps API key is missing.
+    # We can inspect if the real-time kwh came from the API by checking if ELECTRICITY_MAPS_API_KEY is set.
+    import os
+    if os.getenv("ELECTRICITY_MAPS_API_KEY"):
+        grid_kwh = realtime_kwh
+    else:
+        grid_kwh = factors.grid_kwh
 
     return GridFactors(
-        grid_kwh=realtime_kwh,
+        grid_kwh=grid_kwh,
         transport_km=factors.transport_km,
         avg_annual_kg=factors.avg_annual_kg
     )

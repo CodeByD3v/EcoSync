@@ -189,6 +189,16 @@ export default function CalculatorPanel({ inputs, onChange, footprint }) {
               <span>{footprint.total_kg.toLocaleString()} kg/yr</span>
             </div>
           </div>
+
+          {/* Transparent Science Citations */}
+          <div className="pt-2 text-[10px] text-slate-500 leading-relaxed border-t border-panelborder/50">
+            <p className="font-bold text-slate-400 mb-1">Methodology & Sources:</p>
+            <ul className="space-y-1 pl-3 list-disc">
+              <li><span className="text-slate-400">Energy & Commute:</span> Regional grid intensity powered by India Central Electricity Authority (CEA) averages.</li>
+              <li><span className="text-slate-400">Transport:</span> US Environmental Protection Agency (EPA) mobile combustion factors.</li>
+              <li><span className="text-slate-400">Diet:</span> Intergovernmental Panel on Climate Change (IPCC) global diet lifecycle emissions.</li>
+            </ul>
+          </div>
         </div>
       </Card>
     </div>

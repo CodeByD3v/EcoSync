@@ -15,7 +15,7 @@ class ParseRequest(BaseModel):
     message: str
 
 class ParseResponse(BaseModel):
-    diet: Optional[Literal["meat_heavy", "flexitarian", "vegetarian", "vegan"]] = None
+    diet: Optional[Literal["meat_heavy", "mixed", "vegetarian", "vegan"]] = None
     commute: Optional[Literal["drive", "transit", "two_wheeler", "walk"]] = None
     housing: Optional[Literal["house", "apartment", "shared"]] = None
     confidence: Literal["high", "low", "none"]
@@ -42,7 +42,7 @@ def parse_onboarding(payload: ParseRequest) -> ParseResponse:
     "{payload.message}"
 
     Extract the following categories:
-    - diet: must be one of ["meat_heavy", "flexitarian", "vegetarian", "vegan"] or null if not mentioned or unclear.
+    - diet: must be one of ["meat_heavy", "mixed", "vegetarian", "vegan"] or null if not mentioned or unclear.
     - commute: must be one of ["drive", "transit", "two_wheeler", "walk"] or null if not mentioned or unclear.
     - housing: must be one of ["house", "apartment", "shared"] or null if not mentioned or unclear.
     - confidence: must be one of ["high", "low"] depending on how confident you are in the extraction. If you cannot extract any category with certainty, set confidence to "low".
@@ -105,7 +105,7 @@ def parse_onboarding(payload: ParseRequest) -> ParseResponse:
 
                 # Ensure all values are allowed
                 diet = parsed_data.get("diet")
-                if diet not in ["meat_heavy", "flexitarian", "vegetarian", "vegan"]:
+                if diet not in ["meat_heavy", "mixed", "vegetarian", "vegan"]:
                     diet = None
 
                 commute = parsed_data.get("commute")

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Radio, RefreshCw, CheckCircle2, AlertTriangle, Play, Smartphone, CreditCard, Zap } from 'lucide-react'
+import { Radio, RefreshCw, CheckCircle2, AlertTriangle, Play, Smartphone, CreditCard, Zap, Lock } from 'lucide-react'
 import Card from './Card.jsx'
 
 export default function IngestionPanel({ onTelemetryTick, offline }) {
@@ -17,6 +17,7 @@ export default function IngestionPanel({ onTelemetryTick, offline }) {
 
   const [simulating, setSimulating] = useState(null)
   const [showUtilityModal, setShowUtilityModal] = useState(false)
+  const [showConsentModal, setShowConsentModal] = useState({ show: false, source: null })
   const [utilityConfig, setUtilityConfig] = useState({
     provider: 'BESCOM (Bengaluru)',
     meterId: '',
@@ -24,16 +25,33 @@ export default function IngestionPanel({ onTelemetryTick, offline }) {
   })
 
   const toggleSource = (source) => {
+    if (!sources[source]) {
+      // Show concept modal when trying to connect
+      setShowConsentModal({ show: true, source })
+      return
+    }
+    // Allow disconnecting directly
     setSources((prev) => {
-      const next = { ...prev, [source]: !prev[source] }
+      const next = { ...prev, [source]: false }
       addLog(
         source.toUpperCase(),
-        `${source === 'location' ? 'Google Fit' : source === 'transactions' ? 'Plaid API' : 'Smart Grid Sync'} ${
-          next[source] ? 'CONNECTED and passive listening active.' : 'DISCONNECTED by user request.'
-        }`
+        `${source === 'location' ? 'Google Fit' : source === 'transactions' ? 'Plaid API' : 'Smart Grid Sync'} DISCONNECTED by user request.`
       )
       return next
     })
+  }
+
+  const confirmSimulatedConnect = () => {
+    const source = showConsentModal.source
+    setSources((prev) => {
+      const next = { ...prev, [source]: true }
+      addLog(
+        source.toUpperCase(),
+        `${source === 'location' ? 'Google Fit' : source === 'transactions' ? 'Plaid API' : 'Smart Grid Sync'} CONNECTED (Simulation mode) and passive listening active.`
+      )
+      return next
+    })
+    setShowConsentModal({ show: false, source: null })
   }
 
   const handleLinkUtility = (e) => {
@@ -298,6 +316,41 @@ export default function IngestionPanel({ onTelemetryTick, offline }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      {/* Consent Modal for Simulated OAuth */}
+      {showConsentModal.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl border border-panelborder bg-panel p-6 shadow-2xl space-y-4 text-left">
+            <div>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Lock size={20} className="text-eco-neon" />
+                Privacy-First Consent Concept
+              </h3>
+              <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                This is a privacy-first consent flow demonstration. Full live integration requires real OAuth credentials (which we omit here for privacy). 
+              </p>
+              <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                By continuing in <strong>simulation mode</strong>, you can use the mock telemetry triggers below to see how passive data ingestion works without connecting your real accounts.
+              </p>
+            </div>
+            
+            <div className="flex items-center justify-end gap-2.5 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowConsentModal({ show: false, source: null })}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmSimulatedConnect}
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-eco-neon text-slatebg hover:opacity-90 shadow-glow select-none"
+              >
+                Enter Simulation Mode
+              </button>
+            </div>
           </div>
         </div>
       )}

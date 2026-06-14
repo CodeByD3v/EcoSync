@@ -1,23 +1,23 @@
 from typing import List
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from app.schemas.insights import Insight
 from app.services.insights_service import generate_live_insights
+from app.services.footprint_service import get_footprint_service, FootprintService
 
 router = APIRouter(prefix="/insights", tags=["insights"])
 
 
 @router.get("", response_model=List[Insight])
-def get_insights() -> List[Insight]:
-    """Return context-aware nudges and smart swaps for the user."""
-    # In a fully connected app, you would fetch this from your db.py.
-    # For now, we pass the current live state to Gemini to analyze.
-    current_user_data = {
-        "transport_kg": 5.5,
-        "energy_kg": 6.1,
-        "food_kg": 2.9,
-        "primary_commute": "drive-alone",
-        "recent_activity": "High electricity usage detected at 6 PM."
+def get_insights(
+    service: FootprintService = Depends(get_footprint_service),
+) -> List[Insight]:
+    profile = service.get_profile()
+    user_data = {
+        "km_driven_per_week": profile.get("km_driven_per_week", 100),
+        "flights_per_year": profile.get("flights_per_year", 2),
+        "kwh_per_month": profile.get("kwh_per_month", 200),
+        "diet": profile.get("diet", "mixed"),
+        "new_items_per_month": profile.get("new_items_per_month", 5),
     }
-    
-    return generate_live_insights(current_user_data)
+    return generate_live_insights(user_data)
