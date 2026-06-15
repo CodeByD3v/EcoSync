@@ -16,4 +16,4 @@ frontend/dist/
 
 # Database
 *.db
-
+backend-dev.log

@@ -90,6 +90,7 @@ def onboard(payload: OnboardingRequest) -> OnboardingResponse:
             )
             cursor.execute("UPDATE actions    SET completed = 0")
             cursor.execute("UPDATE challenges SET progress  = 0")
+            cursor.execute("DELETE FROM history WHERE month != 'Jun'")
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Database error: {exc}") from exc
 
