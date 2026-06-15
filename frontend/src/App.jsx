@@ -131,6 +131,7 @@ export default function App() {
   const { profile, saveProfile, clearProfile } = useUserProfile()
   const [serverProfile, setServerProfile] = useState(null)
   const [footprint, setFootprint] = useState(null)
+  const [isFootprintCalculated, setIsFootprintCalculated] = useState(false)
   const [insights, setInsights] = useState([])
   const [actions, setActions] = useState([])
   const [challenges, setChallenges] = useState([])
@@ -162,10 +163,12 @@ export default function App() {
         setCalcInputs(nextInputs)
         const calculated = calculateFootprintLocal(nextInputs, profile?.city, profile?.name)
         setFootprint(calculated)
+        setIsFootprintCalculated(true)
         showToast(`Simulated telemetry event capture: ${label}`)
       } else {
         const fp = await triggerTelemetryTick(type)
         setFootprint(fp)
+        setIsFootprintCalculated(true)
 
         const prof = await getUserProfile()
         setServerProfile(dashboardProfileFromApi(prof, profile))
@@ -201,6 +204,7 @@ export default function App() {
         ])
         if (cancelled) return
         setFootprint(fp)
+        setIsFootprintCalculated(true)
         setInsights(ins)
         setActions(acts)
         setChallenges(chs)
@@ -212,6 +216,7 @@ export default function App() {
         // API offline — load local state
         setOffline(true)
         setFootprint(FALLBACK_FOOTPRINT)
+        setIsFootprintCalculated(false)
         setInsights(FALLBACK_INSIGHTS)
         setActions(FALLBACK_ACTIONS)
         setChallenges(FALLBACK_CHALLENGES)
@@ -282,9 +287,11 @@ export default function App() {
       if (offline) {
         const calculated = calculateFootprintLocal(nextInputs, profile?.city, profile?.name)
         setFootprint(calculated)
+        setIsFootprintCalculated(true)
       } else {
         const calculated = await calculateFootprint(nextInputs)
         setFootprint(calculated)
+        setIsFootprintCalculated(true)
         // Re-fetch insights as emissions factors shift
         const nextInsights = await getInsights()
         setInsights(nextInsights)
@@ -306,6 +313,7 @@ export default function App() {
         getUserProfile(),
       ])
       setFootprint(fp)
+      setIsFootprintCalculated(true)
       setInsights(ins)
       setActions(acts)
       setChallenges(chs)
@@ -324,6 +332,7 @@ export default function App() {
       }
       const calculated = calculateFootprintLocal(calcInit, profileData.city, profileData.name)
       setFootprint(calculated)
+      setIsFootprintCalculated(true)
       setInsights(FALLBACK_INSIGHTS)
       setActions(FALLBACK_ACTIONS)
       setChallenges(FALLBACK_CHALLENGES)
@@ -425,6 +434,7 @@ export default function App() {
                 clearProfile()
                 setServerProfile(null)
                 setFootprint(null)
+                setIsFootprintCalculated(false)
                 setInsights([])
                 setActions([])
                 setChallenges([])
@@ -510,7 +520,7 @@ export default function App() {
 
               <div className="md:col-span-2">
                 {/* FIX 2: Pass annual total_kg so Translation Engine uses same source as header metric cards */}
-                <TranslationEngine annualKg={footprint.total_kg} />
+                <TranslationEngine annualKg={footprint.total_kg} isCalculated={isFootprintCalculated} />
               </div>
 
               {/* FIX 4: 6-Month History with honest projection label */}
