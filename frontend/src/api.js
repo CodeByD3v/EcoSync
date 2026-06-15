@@ -35,7 +35,6 @@ export const submitOnboarding = (payload) =>
 export const parseOnboarding = (message) =>
   request('/onboard/parse', { method: 'POST', body: JSON.stringify({ message }) })
 
-// New endpoints for calculation, profile settings and community challenges
 export const calculateFootprint = (payload) =>
   request('/footprint/calculate', {
     method: 'POST',
@@ -46,8 +45,30 @@ export const getUserProfile = () => request('/footprint/profile')
 
 export const getChallenges = () => request('/actions/challenges')
 
-export const triggerTelemetryTick = (eventType) =>
-  request('/footprint/telemetry-tick', {
+export const getConnectorStatus = () => request('/footprint/connectors')
+
+export const syncFootprintFromConnectors = (payload) =>
+  request('/footprint/sync', {
     method: 'POST',
-    body: JSON.stringify({ event_type: eventType }),
+    body: JSON.stringify(payload),
+  })
+
+export const getLocationContext = (lat, lng) =>
+  request('/location/context', {
+    method: 'POST',
+    body: JSON.stringify({ lat, lng }),
+  })
+
+export const resolvePincode = (zipCode) =>
+  request('/location/pincode', {
+    method: 'POST',
+    body: JSON.stringify({ zip_code: zipCode }),
+  })
+
+export const getMapsConfig = () => request('/location/maps-config')
+
+export const getNeighborhoodComparison = (payload) =>
+  request('/location/neighborhood', {
+    method: 'POST',
+    body: JSON.stringify(payload),
   })

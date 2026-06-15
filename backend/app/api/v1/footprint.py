@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 
 from app.schemas import DailyFootprint, FootprintRequest
 from app.services import FootprintService, get_footprint_service
 from app.services.footprint_service import EF
+from app.services.location_service import connector_status
 
 router = APIRouter(prefix="/footprint", tags=["footprint"])
 
@@ -54,51 +57,54 @@ def get_emission_factors():
     }
 
 
-@router.get("/demo/automated-tracking", tags=["demo"])
-def demo_automated_tracking():
-    """Simulates what Plaid + Google Fit integration would return."""
-    return {
-        "note": (
-            "This endpoint simulates automated API integrations. In production, data is "
-            "pulled from Plaid (financial transactions) and Google Fit (mobility detection) — "
-            "no manual input required."
-        ),
-        "simulated_sources": {
-            "plaid_transactions": {
-                "petrol_stations_spend_inr": 3200,
-                "flights_booked": 2,
-                "grocery_stores_spend_inr": 8400,
-                "fast_fashion_spend_inr": 1500,
-            },
-            "google_fit_mobility": {
-                "avg_km_driven_per_week": 87,
-                "cycling_km_this_month": 42,
-                "walking_km_this_month": 18,
-            },
-            "smart_home": {
-                "kwh_this_month": 214,
-                "solar_generated_kwh": 0,
-            }
-        },
-        "derived_inputs": {
-            "km_driven_per_week": 87,
-            "flights_per_year": 2,
-            "kwh_per_month": 214,
-            "diet": "mixed",
-            "new_items_per_month": 4
-        }
-    }
+
+class MobilitySync(BaseModel):
+    source: Literal["google_fit", "manual_connector", "other"] = "manual_connector"
+    distance_km: float = Field(..., ge=0)
+    period_days: float = Field(7, gt=0, le=366)
 
 
-class TelemetryTickRequest(BaseModel):
-    event_type: str
+class UtilitySync(BaseModel):
+    source: Literal["utility_api", "smart_meter", "manual_connector", "other"] = "manual_connector"
+    kwh: float = Field(..., ge=0)
+    period_days: float = Field(30, gt=0, le=366)
 
 
-@router.post("/telemetry-tick", response_model=DailyFootprint)
-def telemetry_tick(
-    payload: TelemetryTickRequest,
+class TravelSync(BaseModel):
+    source: Literal["plaid", "travel_provider", "manual_connector", "other"] = "manual_connector"
+    flights: int = Field(..., ge=0, le=50)
+
+
+class ShoppingSync(BaseModel):
+    source: Literal["plaid", "manual_connector", "other"] = "manual_connector"
+    new_items: int = Field(..., ge=0, le=100)
+
+
+class ConnectorSyncRequest(BaseModel):
+    """Real connector payload normalized by an authenticated integration."""
+
+    mobility: MobilitySync | None = None
+    utility: UtilitySync | None = None
+    travel: TravelSync | None = None
+    shopping: ShoppingSync | None = None
+
+
+@router.get("/connectors")
+def get_footprint_connectors() -> dict:
+    """Return the automated footprint connector readiness status."""
+    return {"connectors": connector_status(), "sync_endpoint": "/api/v1/footprint/sync"}
+
+
+@router.post("/sync")
+def sync_realtime_footprint(
+    payload: ConnectorSyncRequest,
     service: FootprintService = Depends(get_footprint_service),
-) -> DailyFootprint:
-    """Processes a simulated background telemetry event and recalculates footprint."""
-    service.process_telemetry_tick(payload.event_type)
-    return service.get_daily()
+) -> dict:
+    """Ingest real provider data and recalculate the footprint."""
+    sync_data = payload.model_dump(mode="json", exclude_none=True)
+    if not sync_data:
+        raise HTTPException(status_code=422, detail="At least one connector payload is required.")
+
+    result = service.apply_connector_sync(sync_data)
+    return {"status": "ok", **result, "footprint": service.get_daily()}
+

@@ -137,7 +137,7 @@ Built in **React 18** with **Vite** and **Tailwind CSS**, the UI features a prem
   * **Calculator:** Adjust sliders for weekly commute distance, annual flights, monthly electricity, and diet type to instantly update the profile in the database and recalculate total footprint in real-time.
   * **Actions:** A checklist of habits to earn points, linked directly to progress bars for active community challenges.
 * **Cheeseburger Index:** Rather than displaying abstract carbon figures in isolation, the dashboard converts CO₂ weight into the universally understood unit: **Cheeseburgers** (1 burger = **6.6 kg CO₂e** baseline).
-* **Offline Resiliency:** If the backend API is offline, the React app automatically switches to a local calculation engine and memory-state toggles, ensuring the UI remains functional during demo presentations.
+* **Offline Resiliency:** If the backend API is offline, the React app switches to local cached calculation state so the dashboard still renders while live connectors are unavailable.
 
 ---
 
@@ -159,7 +159,7 @@ Features the live emissions breakdown dial, the Cheeseburger Index converter, mo
 
 ## ✨ 4. Key Features
 
-* **Automated Data Ingestion (Simulated in MVP):** EcoSync demonstrates how telemetry replaces manual logging. In production, background jobs fetch Plaid transactions and Google Fit steps, while the MVP simulates these data points cleanly using structured seed endpoints.
+* **Automated Data Ingestion:** EcoSync now exposes real connector readiness and a normalized `/api/v1/footprint/sync` endpoint for provider payloads from Google Fit, Plaid transactions, utility meters, and custom backend jobs.
 * **The Cheeseburger Index:** By translating invisible emissions into food units, the user can understand their impact immediately (e.g., *"My commute today was equivalent to 2.2 cheeseburgers"*).
 * **AI-Powered Smart Swaps:** The backend sorts emissions categories to isolate the highest impact source and presents clear, achievable actions:
   > **Smart Swap Example:** Swapping one beef meal this week for lentils cuts emissions by **3.2 kg CO₂** (equal to saving 1.3 cheeseburgers).
@@ -278,7 +278,7 @@ EcoSync stands out in the **Prompt Wars Challenge** because it pairs advanced be
 
 * **Progressive Onboarding:** Instead of bombarding the user with complex questionnaires on sign-up, the conversational AI coach extracts lifestyle vectors gently. By the time the user enters the app, their customized baseline is already calculated.
 * **The Guilt-Free UX:** Most green apps trigger "climate guilt". EcoSync uses gamification, individual challenges, and positive reinforcement to build habit loops. *(Note: Community features and cross-user streaks are planned for future releases).*
-* **Privacy-First Telemetry Concept:** The application visually demonstrates a secure consent model concept. While the MVP utilizes simulated data instead of real OAuth credentials, it illustrates how users would authorize device-level sensors (Google Fit API) and read-only financial tokens (Plaid) under strict local processing rules in a production environment.
+* **Privacy-First Telemetry:** The application separates connector credentials from the UI. Provider keys and OAuth secrets stay in runtime environment variables, while the frontend only sees readiness state and normalized carbon inputs.
 * **Transparent Science:** Unlike black-box carbon estimators, EcoSync links regional variables directly to international standards (IPCC/EPA) and local grid configurations (India Central Electricity Authority), with citations integrated directly into the user interface so you always know where your numbers come from.
 
 ---

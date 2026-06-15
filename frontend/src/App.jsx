@@ -19,7 +19,6 @@ import {
   getUserProfile,
   calculateFootprint,
   getChallenges,
-  triggerTelemetryTick,
 } from './api.js'
 import {
   FALLBACK_ACTIONS,
@@ -148,41 +147,6 @@ export default function App() {
     setTimeout(() => {
       setToast(null)
     }, 4500)
-  }
-
-  const handleTelemetryTick = async (type, label) => {
-    try {
-      if (offline) {
-        let nextInputs = { ...calcInputs }
-        if (type === 'drive') nextInputs.km_driven_per_week = Math.min(2000, calcInputs.km_driven_per_week + 25)
-        if (type === 'transit') nextInputs.km_driven_per_week = Math.max(0, calcInputs.km_driven_per_week - 30)
-        if (type === 'flight') nextInputs.flights_per_year = Math.min(50, calcInputs.flights_per_year + 1)
-        if (type === 'utility') nextInputs.kwh_per_month = Math.min(2000, calcInputs.kwh_per_month + 15)
-        if (type === 'shopping') nextInputs.new_items_per_month = Math.min(100, calcInputs.new_items_per_month + 1)
-
-        setCalcInputs(nextInputs)
-        const calculated = calculateFootprintLocal(nextInputs, profile?.city, profile?.name)
-        setFootprint(calculated)
-        setIsFootprintCalculated(true)
-        showToast(`Simulated telemetry event capture: ${label}`)
-      } else {
-        const fp = await triggerTelemetryTick(type)
-        setFootprint(fp)
-        setIsFootprintCalculated(true)
-
-        const prof = await getUserProfile()
-        setServerProfile(dashboardProfileFromApi(prof, profile))
-        setCalcInputs(calculatorInputsFromProfile(prof))
-
-        const nextInsights = await getInsights()
-        setInsights(nextInsights)
-        showToast(`Simulated telemetry integrated: ${label}`)
-      }
-    } catch (err) {
-      console.error(err)
-      showToast(`Telemetry processing error: ${err.message}`, 'error')
-      throw err
-    }
   }
 
   const handleRedeemPoints = (cost, successMsg) => {
@@ -386,7 +350,7 @@ export default function App() {
       {offline && (
         <div className="flex items-center justify-center gap-2 bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 text-xs text-amber-300">
           <WifiOff size={14} />
-          API Offline — Running client-side simulation & local calculation.
+          API Offline - live connectors unavailable; showing local cached fallback.
         </div>
       )}
 
@@ -623,7 +587,7 @@ export default function App() {
 
         {/* Tab 4: INGESTION GRID */}
         {activeTab === 'ingestion' && (
-          <IngestionPanel onTelemetryTick={handleTelemetryTick} offline={offline} />
+          <IngestionPanel offline={offline} />
         )}
 
         {/* Tab 5: REWARDS SHOP */}

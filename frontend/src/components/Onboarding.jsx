@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Car, CreditCard, Home, Leaf, MapPin, Salad, Zap } from 'lucide-react'
 import { getGridFactor, normalizeGridFactor } from '../lib/gridFactors.js'
-import { submitOnboarding, parseOnboarding } from '../api.js'
+import { submitOnboarding, parseOnboarding, resolvePincode } from '../api.js'
 
 const COMMUTE_MAPPING = { drive: 200.0, two_wheeler: 120.0, transit: 50.0, walk: 0.0 }
 const HOUSING_MAPPING = { house: 350.0, apartment: 200.0, shared: 100.0 }
@@ -205,38 +205,28 @@ export default function Onboarding({ onComplete }) {
     setPincodeStatus('loading')
     setPincodeError(null)
 
-    const controller = new AbortController()
-
     async function validatePincode() {
       try {
-        const response = await fetch(`https://api.postalpincode.in/pincode/${code}`, {
-          signal: controller.signal
-        })
-        const data = await response.json()
+        const data = await resolvePincode(code)
 
         if (!active) return
 
-        if (data && data[0] && data[0].Status === 'Success' && data[0].PostOffice && data[0].PostOffice.length > 0) {
-          const mainOffice = data[0].PostOffice[0]
-          const district = mainOffice.District
-          const state = mainOffice.State
-          setVerifiedLocation(`${district}, ${state}`)
+        if (data?.city && data?.state) {
+          setVerifiedLocation(`${data.city}, ${data.state}`)
           setPincodeStatus('valid')
           setPincodeError(null)
-          setCity(district)
+          setCity(data.city)
         } else {
           setPincodeStatus('invalid')
-          setPincodeError('Invalid PIN code. No records found for India Post.')
+          setPincodeError('PIN code lookup did not return a usable location.')
           setVerifiedLocation(null)
         }
       } catch (err) {
         if (!active) return
-        if (err.name === 'AbortError') return
-        console.warn('Real-time PIN code verification failed or offline:', err)
-        // Fallback to basic 6-digit validation if offline/error
-        setPincodeStatus('valid')
-        setPincodeError(null)
-        setVerifiedLocation('Verified format (offline)')
+        console.warn('Live PIN code verification failed:', err)
+        setPincodeStatus('invalid')
+        setPincodeError(err.message || 'PIN code verification failed. Check the backend connection.')
+        setVerifiedLocation(null)
       }
     }
 
@@ -244,7 +234,6 @@ export default function Onboarding({ onComplete }) {
 
     return () => {
       active = false
-      controller.abort()
     }
   }, [zipCode])
 

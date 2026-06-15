@@ -1,5 +1,5 @@
 // Fallback data so the dashboard renders perfectly even if the API is
-// unreachable (e.g. a static demo). Mirrors the FastAPI mock payloads.
+// unreachable. Mirrors the public response shape used by the FastAPI API.
 export const FALLBACK_FOOTPRINT = {
   user_name: 'Arjun',
   date: new Date().toISOString().slice(0, 10),

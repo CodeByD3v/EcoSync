@@ -58,6 +58,41 @@ class Settings:
         default_factory=lambda: float(os.getenv("LLM_TEMPERATURE", "0.2"))
     )
 
+    # Real-time external API connectors.
+    electricity_maps_api_key: str | None = field(
+        default_factory=lambda: os.getenv("ELECTRICITY_MAPS_API_KEY")
+    )
+    openweather_api_key: str | None = field(
+        default_factory=lambda: os.getenv("OPENWEATHER_API_KEY")
+    )
+    google_maps_api_key: str | None = field(
+        default_factory=lambda: os.getenv("GOOGLE_MAPS_API_KEY")
+    )
+    plaid_client_id: str | None = field(
+        default_factory=lambda: os.getenv("PLAID_CLIENT_ID")
+    )
+    plaid_secret: str | None = field(
+        default_factory=lambda: os.getenv("PLAID_SECRET")
+    )
+    plaid_env: str = field(
+        default_factory=lambda: os.getenv("PLAID_ENV", "sandbox")
+    )
+    google_fit_client_id: str | None = field(
+        default_factory=lambda: os.getenv("GOOGLE_FIT_CLIENT_ID")
+    )
+    google_fit_client_secret: str | None = field(
+        default_factory=lambda: os.getenv("GOOGLE_FIT_CLIENT_SECRET")
+    )
+    utility_api_base_url: str | None = field(
+        default_factory=lambda: os.getenv("UTILITY_API_BASE_URL")
+    )
+    utility_api_key: str | None = field(
+        default_factory=lambda: os.getenv("UTILITY_API_KEY")
+    )
+    connector_timeout_seconds: float = field(
+        default_factory=lambda: float(os.getenv("ECOSYNC_CONNECTOR_TIMEOUT_SECONDS", "5"))
+    )
+
     # Server settings (used by main.py)
     port: int = field(
         default_factory=lambda: int(os.getenv("PORT", "8000"))

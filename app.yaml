@@ -7,6 +7,12 @@
 #
 # Prefer Cloud Run? Skip this file and run instead:
 #   gcloud run deploy ecosync --source . --region us-central1 --allow-unauthenticated
+#
+# Configure real-time provider credentials as runtime environment variables in
+# App Engine or Cloud Run. Do not bake these secrets into the Docker image:
+#   ELECTRICITY_MAPS_API_KEY, OPENWEATHER_API_KEY, GOOGLE_MAPS_API_KEY,
+#   PLAID_CLIENT_ID, PLAID_SECRET, GOOGLE_FIT_CLIENT_ID,
+#   GOOGLE_FIT_CLIENT_SECRET, UTILITY_API_BASE_URL, UTILITY_API_KEY.
 runtime: custom
 env: flex
 

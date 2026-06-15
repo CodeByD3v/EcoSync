@@ -9,6 +9,8 @@
 # Stage 1: build the frontend
 FROM node:20-slim AS frontend
 WORKDIR /app/frontend
+ARG VITE_GOOGLE_MAPS_API_KEY=""
+ENV VITE_GOOGLE_MAPS_API_KEY=$VITE_GOOGLE_MAPS_API_KEY
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ ./

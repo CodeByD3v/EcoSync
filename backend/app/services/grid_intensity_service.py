@@ -28,7 +28,7 @@ DEFAULT_FACTORS = {
 
 class GridIntensityService:
     def get_realtime_intensity(self, city: str) -> float:
-        """Fetch real-time grid intensity for a city, falling back to time-of-day heuristics."""
+        """Fetch real-time grid intensity for a city, else use regional factors."""
         if not city:
             return DEFAULT_FACTORS["GLOBAL"]
 
@@ -59,8 +59,7 @@ class GridIntensityService:
                 # Silently fail and use dynamic fallback
                 pass
 
-        # 2. Heuristic Real-Time Carbon Intensity Model
-        # Calculates fluctuations based on time of day (Solar peak vs Evening peak)
+        # 2. Regional time-adjusted factor used when the live provider is not configured.
         base_factor = DEFAULT_FACTORS.get(zone, 0.82 if "india" in city_lower else 0.49)
         current_hour = datetime.now().hour
 
