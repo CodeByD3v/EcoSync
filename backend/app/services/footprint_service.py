@@ -339,8 +339,9 @@ class FootprintService:
         with db_session() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "INSERT INTO history (month, total) VALUES ('Jun', ?)"
-                " ON CONFLICT(month) DO UPDATE SET total = ?",
+                """INSERT INTO history (month, total, is_seeded)
+                   VALUES ('Jun', ?, 0)
+                   ON CONFLICT(month) DO UPDATE SET total = ?, is_seeded = 0""",
                 (current_monthly_kg, current_monthly_kg),
             )
             cursor.execute("SELECT month, total FROM history ORDER BY rowid ASC")

@@ -87,7 +87,7 @@ export default function LocalBenchmark({ userFootprint, zipCode, avgAnnualKg, pr
         {/* Anonymized metrics disclaimer */}
         <div className="flex items-center gap-2 text-[10px] text-slate-500 mt-2">
           <Info size={12} className="shrink-0" />
-          <span>Estimated from regional grid intensity and national census averages.</span>
+          <span>Regional average estimated from India CEA grid intensity factors. Greenest 10% goal set at 45% of regional baseline. These are model estimates, not live census data.</span>
         </div>
       </div>
     </Card>

@@ -1,18 +1,25 @@
-// Fallback data so the dashboard renders perfectly even if the API is
-// unreachable. Mirrors the public response shape used by the FastAPI API.
+// Offline fallback data — rendered when the backend API is unreachable.
+//
+// Rules:
+//  • user_name / name / city are EMPTY — no fake identity leaks into the UI.
+//  • is_calculated = false — TranslationEngine stays hidden until real data arrives.
+//  • Numeric values are India-average estimates, not specific to any fictional user.
+//  • Fallback insight IDs end in "-fallback" so InsightsPanel can detect heuristic mode.
+
 export const FALLBACK_FOOTPRINT = {
-  user_name: 'Arjun',
+  user_name: '',
   date: new Date().toISOString().slice(0, 10),
-  total_kg: 4950,
-  yesterday_kg: 5070,
+  total_kg: 2000,
+  yesterday_kg: 2120,
   delta_kg: -120.0,
   unit: 'kg CO2e',
+  is_calculated: false,
   breakdown: [
-    { name: 'Home Energy', percentage: 40.0, kg: 1980, color: '#185FA5' },
-    { name: 'Transport', percentage: 22.0, kg: 1090, color: '#D85A30' },
-    { name: 'Flights', percentage: 0.0, kg: 0, color: '#993C1D' },
-    { name: 'Diet', percentage: 30.0, kg: 1490, color: '#3B6D11' },
-    { name: 'Shopping', percentage: 8.0, kg: 390, color: '#534AB7' },
+    { name: 'Home Energy', percentage: 33.0, kg: 660, color: '#185FA5' },
+    { name: 'Transport',   percentage: 25.0, kg: 500, color: '#D85A30' },
+    { name: 'Flights',     percentage: 13.0, kg: 255, color: '#993C1D' },
+    { name: 'Diet',        percentage: 21.0, kg: 420, color: '#3B6D11' },
+    { name: 'Shopping',    percentage:  8.0, kg: 165, color: '#534AB7' },
   ],
   trend: [
     { label: 'Jan', value: 420 },
@@ -20,13 +27,13 @@ export const FALLBACK_FOOTPRINT = {
     { label: 'Mar', value: 370 },
     { label: 'Apr', value: 355 },
     { label: 'May', value: 340 },
-    { label: 'Jun', value: 310 },
+    { label: 'Jun', value: 167 },
   ],
 }
 
 export const FALLBACK_INSIGHTS = [
   {
-    id: 'walk-detected',
+    id: 'walk-detected-fallback',
     type: 'positive',
     icon: 'Footprints',
     title: 'Smart Walk Detected',
@@ -34,7 +41,7 @@ export const FALLBACK_INSIGHTS = [
     impact_kg: -0.8,
   },
   {
-    id: 'peak-hours',
+    id: 'peak-hours-fallback',
     type: 'alert',
     icon: 'Zap',
     title: 'Peak Hours Alert',
@@ -42,7 +49,7 @@ export const FALLBACK_INSIGHTS = [
     impact_kg: -0.5,
   },
   {
-    id: 'swap-beef',
+    id: 'swap-beef-fallback',
     type: 'swap',
     icon: 'Salad',
     title: 'Smart Swap: Lentils for Beef',
@@ -52,25 +59,26 @@ export const FALLBACK_INSIGHTS = [
 ]
 
 export const FALLBACK_ACTIONS = [
-  { id: 'plant-lunch', label: 'Eat a plant-based lunch', points: 25, completed: false },
-  { id: 'public-transit', label: 'Take public transit or walk', points: 30, completed: false },
-  { id: 'cold-wash', label: 'Wash clothes in cold water', points: 15, completed: false },
-  { id: 'unplug-devices', label: 'Unplug idle devices', points: 10, completed: false },
-  { id: 'reusable-bottle', label: 'Use a reusable water bottle', points: 10, completed: false },
+  { id: 'plant-lunch',     label: 'Eat a plant-based lunch',        points: 25, completed: false },
+  { id: 'public-transit',  label: 'Take public transit or walk',    points: 30, completed: false },
+  { id: 'cold-wash',       label: 'Wash clothes in cold water',     points: 15, completed: false },
+  { id: 'unplug-devices',  label: 'Unplug idle devices',            points: 10, completed: false },
+  { id: 'reusable-bottle', label: 'Use a reusable water bottle',    points: 10, completed: false },
 ]
 
+// Neutral: no name/city so the greeting never shows a fake identity offline
 export const FALLBACK_PROFILE = {
-  name: 'Arjun',
-  city: 'Bengaluru',
-  km_driven_per_week: 100,
-  flights_per_year: 2,
-  kwh_per_month: 200,
-  diet: 'mixed',
+  name: '',
+  city: '',
+  km_driven_per_week:  100,
+  flights_per_year:    2,
+  kwh_per_month:       200,
+  diet:                'mixed',
   new_items_per_month: 5,
 }
 
 export const FALLBACK_CHALLENGES = [
-  { id: 'meatless-monday-streak', name: 'Meatless Monday streak', members: 142, progress: 0, goal: 100 },
-  { id: 'zero-drive-week', name: 'Zero-drive week', members: 89, progress: 0, goal: 100 },
-  { id: 'solar-switch-collective', name: 'Solar switch collective', members: 234, progress: 0, goal: 100 },
+  { id: 'meatless-monday-streak',  name: 'Meatless Monday streak',  members: 142, progress: 0, goal: 100 },
+  { id: 'zero-drive-week',         name: 'Zero-drive week',         members:  89, progress: 0, goal: 100 },
+  { id: 'solar-switch-collective', name: 'Solar switch collective',  members: 234, progress: 0, goal: 100 },
 ]

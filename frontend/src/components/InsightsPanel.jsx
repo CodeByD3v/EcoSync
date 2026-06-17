@@ -17,6 +17,7 @@ const FALLBACK_IDS = new Set([
   'walk-detected',
   'walk-detected-fallback',
   'peak-hours',
+  'peak-hours-fallback',
   'swap-beef',
   'swap-beef-fallback',
 ])

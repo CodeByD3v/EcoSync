@@ -84,7 +84,7 @@ def generate_live_insights(user_footprint: Dict[str, Any]) -> List[Insight]:
     """
 
     # We will try these models in order:
-    models_to_try = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-1.5-flash"]
+    models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash"]
     last_error = None
 
     for model_name in models_to_try:
