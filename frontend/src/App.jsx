@@ -168,7 +168,8 @@ export default function App() {
         ])
         if (cancelled) return
         setFootprint(fp)
-        setIsFootprintCalculated(true)
+        // Use is_calculated from the API — false when profile is the startup seed
+        setIsFootprintCalculated(fp.is_calculated ?? false)
         setInsights(ins)
         setActions(acts)
         setChallenges(chs)
@@ -277,7 +278,8 @@ export default function App() {
         getUserProfile(),
       ])
       setFootprint(fp)
-      setIsFootprintCalculated(true)
+      // After a real onboard the API will return is_calculated=true
+      setIsFootprintCalculated(fp.is_calculated ?? true)
       setInsights(ins)
       setActions(acts)
       setChallenges(chs)
@@ -410,11 +412,11 @@ export default function App() {
 
             <div className="flex items-center gap-3">
               <div className="h-8 w-8 rounded-full bg-eco-neon/20 border border-eco-neon/40 flex items-center justify-center text-xs font-bold text-eco-neon">
-                {benchmarkProfile.name ? benchmarkProfile.name.charAt(0).toUpperCase() : 'U'}
+                {(benchmarkProfile.name || 'U').charAt(0).toUpperCase()}
               </div>
               <div className="text-left">
-                <p className="text-xs font-bold text-white">{benchmarkProfile.name || 'User'}</p>
-                <p className="text-[10px] text-slate-400">{benchmarkProfile.city || 'Location'}</p>
+                <p className="text-xs font-bold text-white">{benchmarkProfile.name || 'EcoSync User'}</p>
+                <p className="text-[10px] text-slate-400">{benchmarkProfile.city || 'Location not set'}</p>
               </div>
             </div>
           </div>

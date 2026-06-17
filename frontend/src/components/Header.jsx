@@ -28,7 +28,7 @@ export default function Header({ footprint, profileName }) {
             <span className="text-xs font-semibold uppercase tracking-[0.2em]">EcoSync</span>
           </div>
           <h1 className="mt-4 text-2xl font-bold text-white sm:text-3xl">
-            {greeting()}, {profileName || user_name}.
+            {greeting()}, {profileName || user_name || ‘there’}.
           </h1>
           <p className="mt-1 max-w-md text-sm text-slate-400">
             Here is your real-time carbon footprint. Small daily choices compound into a
