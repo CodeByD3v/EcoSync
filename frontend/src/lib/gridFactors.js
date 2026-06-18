@@ -29,7 +29,8 @@ export function normalizeGridFactor(factors, fallback = INDIA_FALLBACK) {
 }
 
 export function getGridFactor(city) {
-  let baseFactor = GLOBAL_FALLBACK
+  // Default to India average for empty/unknown city — this app is India-focused
+  let baseFactor = INDIA_FALLBACK
   if (city) {
     const needle = city.trim().toLowerCase()
     if (needle) {

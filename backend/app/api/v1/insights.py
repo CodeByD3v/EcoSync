@@ -19,5 +19,7 @@ def get_insights(
         "kwh_per_month": profile.get("kwh_per_month", 200),
         "diet": profile.get("diet", "mixed"),
         "new_items_per_month": profile.get("new_items_per_month", 5),
+        # Pass is_onboarded so the insight generator can tailor messaging
+        "is_onboarded": profile.get("is_onboarded", False),
     }
     return generate_live_insights(user_data)

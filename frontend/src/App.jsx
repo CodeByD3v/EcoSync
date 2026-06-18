@@ -331,6 +331,9 @@ export default function App() {
   const diffPct = Math.round(Math.abs(footprint.total_kg - localAvg) / localAvg * 100)
   const isAboveAvg = footprint.total_kg > localAvg
   const cheeseburgerCount = Math.round(footprint.total_kg / 6.6)
+  // Show peak-hours advisory only during actual evening peak load (18:00–22:00)
+  const currentHour = new Date().getHours()
+  const isPeakHours = currentHour >= 18 && currentHour <= 22
   const regionLabel = localAvg === 4700 ? 'Global' : (benchmarkProfile?.city ? benchmarkProfile.city : 'India')
 
 
@@ -428,12 +431,12 @@ export default function App() {
             {/* Greeting Header */}
             <Header footprint={footprint} profileName={benchmarkProfile?.name} />
 
-            {/* Peak Demand Advisory */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-xs">
+            {/* Peak Demand Advisory — only shown during actual evening peak hours 18:00–22:00 */}
+            {isPeakHours && <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-xs">
               <div className="flex items-center gap-2 text-amber-400">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-505 bg-amber-500"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
                 </span>
                 <span className="font-bold">⚠️ LIVE GRID ADVISORY:</span>
                 <span className="text-slate-300">Peak hours load on {benchmarkProfile?.city || 'India'} energy grid. Shift heavy appliance usage to earn +15 pts.</span>
@@ -444,7 +447,7 @@ export default function App() {
               >
                 View Actions Plan →
               </button>
-            </div>
+            </div>}
 
             {/* Impact Metric Cards */}
             <div className="grid gap-5 sm:grid-cols-3">

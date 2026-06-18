@@ -23,6 +23,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version=settings.version,
     )
 
+    # SECURITY NOTE: cors_origins defaults to ["*"] (allow all) for local dev.
+    # In production set ECOSYNC_CORS_ORIGINS=https://your-frontend-domain.com
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
