@@ -106,5 +106,9 @@ class Settings:
         return self.static_dir.is_dir()
 
 
+from functools import lru_cache
+
+@lru_cache(maxsize=1)
 def get_settings() -> Settings:
+    """Return cached application settings (reads env vars once on first call)."""
     return Settings()

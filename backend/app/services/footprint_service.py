@@ -60,10 +60,11 @@ _genai_configured = False
 
 def _static_lookup(city: str) -> GridFactors:
     if not city:
-        return _GLOBAL_FALLBACK
+        # No city set yet (pre-onboarding) — use India national average as the safe default
+        return _INDIA_FALLBACK
     needle = city.strip().lower()
     if not needle:
-        return _GLOBAL_FALLBACK
+        return _INDIA_FALLBACK
     for keys, f in _REGIONS:
         if any(key in needle for key in keys):
             return f
@@ -149,7 +150,7 @@ class FootprintService:
             d = dict(row)
             d.pop("id", None)
             if not d.get("zip_code"):
-                d["zip_code"] = "560001" if d.get("city", "").lower() == "bengaluru" else "400001"
+                d["zip_code"] = ""  # Let the frontend handle missing zip gracefully
             # is_onboarded comes straight from the DB (0 or 1)
             d["is_onboarded"] = bool(d.get("is_onboarded", 0))
             d["grid_factors"] = lookup_grid_factor(d.get("city", ""))
@@ -346,6 +347,11 @@ class FootprintService:
             )
             cursor.execute("SELECT month, total FROM history ORDER BY rowid ASC")
             trend = [TrendPoint(label=r["month"], value=r["total"]) for r in cursor.fetchall()]
+            # AreaChart needs at least 2 data points to render — pad with a synthetic prior month
+            # if the user just onboarded and only Jun exists in history.
+            if len(trend) < 2:
+                prior_val = round(current_monthly_kg * 1.06, 1)  # assume 6% higher a month ago
+                trend = [TrendPoint(label="Prior", value=prior_val)] + trend
 
         breakdown = [
             CategoryBreakdown(

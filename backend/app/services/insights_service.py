@@ -50,6 +50,11 @@ def generate_live_insights(user_footprint: Dict[str, Any]) -> List[Insight]:
     settings = get_settings()
     api_key = settings.gemini_api_key
 
+    # Before onboarding, return gentle getting-started nudges rather than
+    # profile-specific insights that would be based on default values
+    if not user_footprint.get("is_onboarded", True):
+        return _get_fallback_insights()
+
     if not api_key:
         logger.warning("No GEMINI_API_KEY found. Using fallback insights.")
         return _get_fallback_insights()

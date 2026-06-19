@@ -3,6 +3,10 @@ import { useCallback, useState } from 'react'
 // Persists the user's onboarding profile in localStorage so the dashboard is
 // only gated behind onboarding once. Reading/writing localStorage keeps the
 // flow working even when the backend is offline.
+//
+// Note: The XOR + base64 below is lightweight OBFUSCATION, not encryption.
+// It prevents casual inspection of localStorage but is not cryptographically secure.
+// Profile data contains no secrets (name, city, diet preference) so this is acceptable.
 const STORAGE_KEY = 'ecosync_profile'
 const ENCRYPTION_KEY = 'ecosync_secure_key_12983'
 
@@ -53,8 +57,8 @@ export function useUserProfile() {
   const saveProfile = useCallback((next) => {
     setProfile(next)
     try {
-      const encrypted = encrypt(JSON.stringify(next))
-      window.localStorage.setItem(STORAGE_KEY, encrypted)
+      const obfuscated = encrypt(JSON.stringify(next))
+      window.localStorage.setItem(STORAGE_KEY, obfuscated)
     } catch {
       // Ignore write failures (e.g. storage disabled) — the in-memory profile
       // still drives the current session.
