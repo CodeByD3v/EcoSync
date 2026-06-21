@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
-  RefreshCw, MapPin, Thermometer, Wind, Zap, Activity, Globe, Loader2,
+  RefreshCw, MapPin, Thermometer, Wind, Zap, Globe, Loader2,
   AlertTriangle, CheckCircle2, CloudSun, Link2, Search, Send, ChevronDown,
   ChevronUp, Car, Plane, ShoppingBag, Plug, BarChart3, Navigation, Map
 } from 'lucide-react'
@@ -274,10 +274,14 @@ export default function IngestionPanel({ offline }) {
 
   /* ─── Init ─── */
   useEffect(() => {
-    fetchConnectorStatus()
-    fetchMapsConfig()
+    // Only fetch live connector status when API is reachable
+    if (!offline) {
+      fetchConnectorStatus()
+      fetchMapsConfig()
+    }
+    // Geolocation is browser-based, always attempt it
     requestGeolocation()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [offline]) // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ─── Auto-refresh ─── */
   useEffect(() => {

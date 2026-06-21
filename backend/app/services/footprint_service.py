@@ -96,7 +96,7 @@ def _fetch_city_factors_from_gemini(city: str, current_hour: int) -> GridFactors
     Example: {{"grid_kwh": 0.82, "transport_km": 0.21, "avg_annual_kg": 2000}}
     """
     try:
-        model = genai.GenerativeModel(settings.llm_model or "gemini-1.5-flash")
+        model = genai.GenerativeModel(settings.llm_model or "gemini-2.0-flash-exp")
         response = model.generate_content(
             prompt,
             request_options={"timeout": settings.connector_timeout_seconds},

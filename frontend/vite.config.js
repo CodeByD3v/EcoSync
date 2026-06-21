@@ -15,4 +15,17 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    sourcemap: false,        // disable sourcemaps in production for smaller bundle
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          charts: ['recharts'],
+          icons: ['lucide-react'],
+        },
+      },
+    },
+  },
 })

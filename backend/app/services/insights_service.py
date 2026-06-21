@@ -13,31 +13,61 @@ logger = logging.getLogger(__name__)
 _genai_configured = False
 
 def _get_fallback_insights() -> List[Insight]:
-    """Fallback static data if the API key is missing or the network fails."""
+    """Rule-based insights when Gemini API key is missing or call fails."""
     return [
         Insight(
             id="walk-detected-fallback",
             type="positive",
             icon="Footprints",
-            title="Smart Walk Detected",
-            description="You walked 2 miles today instead of driving.",
-            impact_kg=-0.8,
+            title="Walk Instead of Drive",
+            description="Replacing a 5 km car trip with walking saves about 1 kg CO₂e and improves health.",
+            impact_kg=-1.0,
         ),
         Insight(
             id="peak-hours-fallback",
             type="alert",
             icon="Zap",
-            title="Peak Hours Alert",
-            description="Unplug idle devices now to avoid high-carbon grid power.",
+            title="Shift Evening Appliance Use",
+            description="India's grid is most carbon-intensive between 18:00–22:00. Run dishwashers and washing machines overnight.",
             impact_kg=-0.5,
         ),
         Insight(
             id="swap-beef-fallback",
             type="swap",
             icon="Salad",
-            title="Smart Swap: Lentils for Beef",
-            description="Swapping one beef meal this week for lentils cuts emissions.",
+            title="Swap Beef for Lentils Once",
+            description="One beef-to-lentil meal swap saves ~3.2 kg CO₂e — equivalent to driving 15 km less.",
             impact_kg=-3.2,
+        ),
+    ]
+
+
+def _get_pre_onboarding_insights() -> List[Insight]:
+    """Gentle nudges shown before the user completes onboarding (no real profile yet)."""
+    return [
+        Insight(
+            id="onboarding-tip-1",
+            type="positive",
+            icon="Sparkles",
+            title="Complete Your Profile",
+            description="Finish onboarding to get AI-powered insights personalised to your diet, commute, and home energy use.",
+            impact_kg=0.0,
+        ),
+        Insight(
+            id="onboarding-tip-2",
+            type="swap",
+            icon="Salad",
+            title="Diet Has the Biggest Impact",
+            description="Switching from meat-heavy to plant-based diet can cut your annual footprint by up to 2,200 kg CO₂e.",
+            impact_kg=-2200.0,
+        ),
+        Insight(
+            id="onboarding-tip-3",
+            type="alert",
+            icon="Zap",
+            title="Electricity Matters in India",
+            description="India's grid emits ~0.82 kg CO₂ per kWh — one of the highest in Asia. Reducing home electricity use has outsized impact.",
+            impact_kg=-164.0,
         ),
     ]
 
@@ -50,10 +80,10 @@ def generate_live_insights(user_footprint: Dict[str, Any]) -> List[Insight]:
     settings = get_settings()
     api_key = settings.gemini_api_key
 
-    # Before onboarding, return gentle getting-started nudges rather than
-    # profile-specific insights that would be based on default values
+    # Before onboarding, return getting-started nudges rather than
+    # profile-specific insights based on default placeholder values
     if not user_footprint.get("is_onboarded", True):
-        return _get_fallback_insights()
+        return _get_pre_onboarding_insights()
 
     if not api_key:
         logger.warning("No GEMINI_API_KEY found. Using fallback insights.")
@@ -89,7 +119,7 @@ def generate_live_insights(user_footprint: Dict[str, Any]) -> List[Insight]:
     """
 
     # We will try these models in order:
-    models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash"]
+    models_to_try = ["gemini-2.0-flash-exp", "gemini-1.5-flash", "gemini-1.5-flash-8b"]
     last_error = None
 
     for model_name in models_to_try:

@@ -60,7 +60,7 @@ class GridIntensityService:
                 pass
 
         # 2. Regional time-adjusted factor used when the live provider is not configured.
-        base_factor = DEFAULT_FACTORS.get(zone, 0.82 if "india" in city_lower else 0.49)
+        base_factor = DEFAULT_FACTORS.get(zone, 0.82)
         current_hour = datetime.now().hour
 
         if 10 <= current_hour <= 15:
