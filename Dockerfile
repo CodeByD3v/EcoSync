@@ -30,5 +30,7 @@ COPY backend/ ./
 COPY --from=frontend /app/frontend/dist ./static
 
 EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:${PORT}/health || exit 1
 # Use JSON form with sh -c and exec so $PORT is expanded and signals are forwarded.
 CMD ["sh", "-c", "exec uvicorn main:app --host 0.0.0.0 --port ${PORT}"]

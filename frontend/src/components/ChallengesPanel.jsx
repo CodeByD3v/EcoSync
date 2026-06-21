@@ -5,7 +5,7 @@ export default function ChallengesPanel({ challenges }) {
   return (
     <Card
       title="Community Challenges"
-      subtitle="Join collective actions and track real-time crowd progress."
+      subtitle="Complete actions above to advance these community goals."
       icon={Award}
     >
       <div className="space-y-4">

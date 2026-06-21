@@ -34,7 +34,13 @@ def location_connectors() -> dict:
 @router.post("/pincode")
 def resolve_pincode(payload: PinCodeRequest) -> dict:
     """Resolve an Indian PIN code to a real India Post location."""
-    return resolve_india_pin_code(payload.zip_code)
+    result = resolve_india_pin_code(payload.zip_code)
+    if not result:
+        raise HTTPException(
+            status_code=422,
+            detail="Invalid or unresolvable PIN code. India Post returned no matching records.",
+        )
+    return result
 
 
 @router.post("/context")

@@ -29,9 +29,12 @@ def calculate_footprint(
     service: FootprintService = Depends(get_footprint_service),
 ) -> DailyFootprint:
     """Update user profile parameters in database and return recalculated footprint."""
-    # 1. Update SQLite with new lifestyle slider positions
-    service.update_profile(payload.model_dump(mode='json'))
-    # 2. Return recalculated profile state
+    try:
+        # 1. Update SQLite with new lifestyle slider positions
+        service.update_profile(payload.model_dump(mode='json'))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to update profile: {exc}") from exc
+    # 2. Return recalculated footprint
     return service.get_daily()
 
 

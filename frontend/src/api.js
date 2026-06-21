@@ -5,16 +5,31 @@
 // as the API, so a relative base works there too. Override with
 // VITE_API_BASE_URL when the API lives on a different host.
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
+const REQUEST_TIMEOUT_MS = 10000  // 10 second timeout for all API calls
 
 async function request(path, options = {}) {
-  const res = await fetch(`${BASE_URL}/api/v1${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  })
-  if (!res.ok) {
-    throw new Error(`Request to ${path} failed with ${res.status}`)
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+  try {
+    const res = await fetch(`${BASE_URL}/api/v1${path}`, {
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      ...options,
+    })
+    clearTimeout(timeoutId)
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}))
+      throw new Error(detail?.detail || `Request to ${path} failed with status ${res.status}`)
+    }
+    return res.json()
+  } catch (err) {
+    clearTimeout(timeoutId)
+    if (err.name === 'AbortError') {
+      throw new Error(`Request to ${path} timed out after ${REQUEST_TIMEOUT_MS / 1000}s`)
+    }
+    throw err
   }
-  return res.json()
 }
 
 export const getDailyFootprint = () => request('/footprint/daily')

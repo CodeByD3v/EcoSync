@@ -7,6 +7,7 @@ local dev, CI and on Cloud Run.
 from __future__ import annotations
 
 import os
+from functools import lru_cache
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -52,7 +53,7 @@ class Settings:
         default_factory=lambda: os.getenv("GEMINI_API_KEY")
     )
     llm_model: str = field(
-        default_factory=lambda: os.getenv("LLM_MODEL", "gemini-1.5-flash")
+        default_factory=lambda: os.getenv("LLM_MODEL", "gemini-2.0-flash-exp")
     )
     llm_temperature: float = field(
         default_factory=lambda: float(os.getenv("LLM_TEMPERATURE", "0.2"))
@@ -105,8 +106,6 @@ class Settings:
     def serve_frontend(self) -> bool:
         return self.static_dir.is_dir()
 
-
-from functools import lru_cache
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

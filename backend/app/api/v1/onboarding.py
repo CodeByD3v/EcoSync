@@ -35,12 +35,13 @@ def onboard(payload: OnboardingRequest) -> OnboardingResponse:
         )
 
     # Resolve PIN → real district name via India Post API
+    # Returns {} if India Post is down — fall back to the city the user typed manually
     resolved_location = resolve_india_pin_code(payload.zip_code)
-    resolved_city = resolved_location["city"] if resolved_location else payload.city.strip()
+    resolved_city = resolved_location.get("city") or payload.city.strip()
     if not resolved_city:
         raise HTTPException(
             status_code=422,
-            detail="City is required when PIN code lookup is unavailable.",
+            detail="City could not be determined. Please enter your city name above.",
         )
 
     if payload.commute not in ALLOWED_COMMUTE:
