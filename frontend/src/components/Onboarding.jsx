@@ -223,9 +223,11 @@ export default function Onboarding({ onComplete }) {
         }
       } catch (err) {
         if (!active) return
-        console.warn('Live PIN code verification failed:', err)
-        setPincodeStatus('invalid')
-        setPincodeError(err.message || 'PIN code verification failed. Check the backend connection.')
+        console.warn('Live PIN code verification failed — allowing manual city entry:', err)
+        // PIN API is down — allow the user to proceed with whatever city they typed manually
+        // rather than hard-blocking them on an external service outage
+        setPincodeStatus('offline')
+        setPincodeError('PIN lookup unavailable — using city name you entered above.')
         setVerifiedLocation(null)
       }
     }
@@ -281,7 +283,7 @@ export default function Onboarding({ onComplete }) {
     return estimateFootprint(gridFactor, { diet, commute, housing })
   }, [gridFactor, diet, commute, housing, city])
 
-  const step1Valid = name.trim() !== '' && city.trim() !== '' && pincodeStatus === 'valid'
+  const step1Valid = name.trim() !== '' && city.trim() !== '' && (pincodeStatus === 'valid' || pincodeStatus === 'offline')
   const step2Valid = diet !== null && commute !== null && housing !== null
 
   async function finish(finalPermissions) {

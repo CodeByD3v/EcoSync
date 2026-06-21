@@ -10,6 +10,7 @@ import IngestionPanel from './components/IngestionPanel.jsx'
 import TranslationEngine from './components/TranslationEngine.jsx'
 import LocalBenchmark from './components/LocalBenchmark.jsx'
 import RewardsPanel from './components/RewardsPanel.jsx'
+import ChallengesPanel from './components/ChallengesPanel.jsx'
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from 'recharts'
 import {
   completeAction,
@@ -90,7 +91,7 @@ function dashboardProfileFromApi(prof, fallback = {}) {
     ...fallback,
     name: prof.name ?? fallback.name ?? 'User',
     city,
-    zip_code: prof.zip_code ?? fallback.zip_code ?? '560001',
+    zip_code: prof.zip_code ?? fallback.zip_code ?? '',
     gridFactor: normalizeGridFactor(prof.grid_factors, fallbackGridFactor),
     diet: prof.diet ?? fallback.diet ?? 'mixed',
   }
@@ -251,7 +252,12 @@ export default function App() {
     try {
       if (offline) {
         const calculated = calculateFootprintLocal(nextInputs, profile?.city, profile?.name)
-        setFootprint(calculated)
+        // Update the Jun trend point with the newly calculated monthly value
+        const monthlyKg = Math.round(calculated.total_kg / 12)
+        const updatedTrend = calculated.trend.map(t =>
+          t.label === 'Jun' ? { ...t, value: monthlyKg } : t
+        )
+        setFootprint({ ...calculated, trend: updatedTrend })
         setIsFootprintCalculated(true)
       } else {
         const calculated = await calculateFootprint(nextInputs)
@@ -407,6 +413,9 @@ export default function App() {
                 setInsights([])
                 setActions([])
                 setChallenges([])
+                setCalcInputs(FALLBACK_PROFILE)
+                setTotalPoints(0)
+                setOffline(false)
               }}
               className="text-[11px] font-semibold text-slate-400 hover:text-rose-400 border border-panelborder hover:border-rose-500/20 bg-slatebg/40 px-3 py-1.5 rounded-xl transition"
             >
@@ -485,7 +494,7 @@ export default function App() {
             {/* Visualisations Layout */}
             <div className="grid gap-5 md:grid-cols-2">
               <BreakdownChart breakdown={footprint.breakdown} total={`${(footprint.total_kg / 1000).toFixed(1)}t`} unit="CO₂/yr" />
-              <LocalBenchmark userFootprint={footprint.total_kg} zipCode={benchmarkProfile?.zip_code || '560001'} avgAnnualKg={localAvg} profileName={benchmarkProfile?.name} />
+              <LocalBenchmark userFootprint={footprint.total_kg} zipCode={benchmarkProfile?.zip_code || ''} avgAnnualKg={localAvg} profileName={benchmarkProfile?.name} />
 
               <div className="md:col-span-2">
                 {/* FIX 2: Pass annual total_kg so Translation Engine uses same source as header metric cards */}
@@ -583,10 +592,9 @@ export default function App() {
 
         {/* Tab 3: ACTIONS */}
         {activeTab === 'actions' && (
-          <div className="grid gap-5 md:grid-cols-2">
-            <div className="md:col-span-2">
-              <ActionsChecklist actions={actions} totalPoints={totalPoints} onToggle={handleToggle} pending={pending} />
-            </div>
+          <div className="space-y-5">
+            <ActionsChecklist actions={actions} totalPoints={totalPoints} onToggle={handleToggle} pending={pending} />
+            <ChallengesPanel challenges={challenges} />
           </div>
         )}
 
@@ -603,7 +611,7 @@ export default function App() {
 
       {/* Toast Alert */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-xl border border-eco-neon/30 bg-[#0b0f14]/95 backdrop-blur px-4 py-3 text-xs font-bold text-white shadow-xl shadow-black/50 ring-1 ring-eco-neon/20 animate-bounce max-w-sm border-eco-neon/30 text-left">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-xl border border-eco-neon/30 bg-[#0b0f14]/95 backdrop-blur px-4 py-3 text-xs font-bold text-white shadow-xl shadow-black/50 ring-1 ring-eco-neon/20 animate-bounce max-w-sm text-left">
           <span className="relative flex h-2 w-2 shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-eco-neon opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-eco-neon"></span>

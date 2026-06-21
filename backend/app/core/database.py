@@ -103,6 +103,9 @@ def init_db() -> None:
         except sqlite3.OperationalError:
             pass
 
+        # Index for faster history queries (idempotent)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_history_month ON history(month);")
+
         # ── seed placeholder profile (no fake name/city) ──────────────────────
         cursor.execute("SELECT COUNT(*) as cnt FROM profile")
         if cursor.fetchone()["cnt"] == 0:

@@ -210,28 +210,20 @@ def resolve_india_pin_code(zip_code: str) -> dict:
         data = _read_json(url, timeout=get_settings().connector_timeout_seconds)
     except Exception as exc:
         logger.warning("India Post PIN lookup failed for %s: %s", zip_code, exc)
-        raise HTTPException(
-            status_code=503,
-            detail="PIN code lookup is temporarily unavailable. Please try again.",
-        ) from exc
+        # Return empty dict instead of raising — callers can fall back to manual city entry
+        return {}
 
     result = data[0] if isinstance(data, list) and data else {}
     post_offices = result.get("PostOffice") or []
     if result.get("Status") != "Success" or not post_offices:
-        raise HTTPException(
-            status_code=422,
-            detail="Invalid Indian PIN code. No matching India Post records found.",
-        )
+        return {}  # Let callers handle invalid PIN gracefully
 
     office = post_offices[0]
     district = (office.get("District") or office.get("Name") or "").strip()
     state = (office.get("State") or "").strip()
     country = (office.get("Country") or "India").strip()
     if not district:
-        raise HTTPException(
-            status_code=422,
-            detail="Invalid Indian PIN code. India Post did not return a usable district.",
-        )
+        return {}  # Unusable result — caller falls back to manual city
 
     google = _geocode_pin_with_google(zip_code)
     return {

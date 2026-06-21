@@ -20,6 +20,9 @@ const FALLBACK_IDS = new Set([
   'peak-hours-fallback',
   'swap-beef',
   'swap-beef-fallback',
+  'onboarding-tip-1',
+  'onboarding-tip-2',
+  'onboarding-tip-3',
 ])
 
 function isFallback(insights) {
